@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: neuroscrape-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=sqlite:///./neuroscrape.db
+      - REDIS_URL=redis://redis:6379/0
+      - CHROMA_PERSIST_DIR=/app/chroma_db
+      - BRIGHTDATA_API_KEY=${BRIGHTDATA_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    volumes:
+      - ./neuroscrape.db:/app/neuroscrape.db
+      - ./chroma_db:/app/chroma_db
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: neuroscrape-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:

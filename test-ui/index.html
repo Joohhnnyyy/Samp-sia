@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NeuroScrape — Backend & AI Test Console</title>
+<style>
+  :root{
+    --bg:#0b0d11; --panel:#14171f; --panel-hover:#1a1e28; --border:#252936; --text:#e6e8ec; --muted:#8b8f9a;
+    --accent:#4f8cff; --accent-glow:rgba(79,140,255,0.2); --good:#3ecf8e; --warn:#f2a93b; --bad:#f2543b; --mono:ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px;line-height:1.4}
+  h1{font-size:20px;font-weight:700;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+  .tag-hero{font-size:11px;background:linear-gradient(135deg,#4f8cff,#7c3aed);color:#fff;padding:2px 8px;border-radius:999px;text-transform:uppercase;font-weight:700}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:960px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+  .panel h2{font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 12px;display:flex;justify-content:space-between;align-items:center}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  input[type=text], input[type=url], select, textarea{
+    width:100%;background:#0a0c10;border:1px solid var(--border);color:var(--text);
+    padding:8px 10px;border-radius:6px;font-size:13px;margin-bottom:10px;outline:none;transition:border-color 0.2s;
+  }
+  input:focus, select:focus, textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow)}
+  .field-row{display:flex;gap:6px;margin-bottom:6px}
+  .field-row input{margin-bottom:0}
+  .btn{cursor:pointer;border:1px solid var(--border);background:#1e222d;color:var(--text);
+    padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;transition:all 0.15s ease}
+  .btn:hover{border-color:var(--accent);background:#252a38}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .btn.primary:hover{background:#3b7bf5}
+  .btn.danger{border-color:var(--bad);color:var(--bad);background:transparent}
+  .btn.danger:hover{background:rgba(242,84,59,0.1)}
+  .btn.warn{border-color:var(--warn);color:var(--warn)}
+  .btn.small{padding:4px 9px;font-size:11px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .tabs{display:flex;gap:4px;margin-bottom:12px}
+  .tab{padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--muted);border:1px solid transparent;transition:all 0.15s}
+  .tab.active{background:#0a0c10;color:var(--text);border-color:var(--border)}
+  #log{background:#07080b;border:1px solid var(--border);border-radius:6px;padding:10px;
+    height:220px;overflow-y:auto;font-family:var(--mono);font-size:11.5px;line-height:1.5}
+  #log .l{color:var(--muted);margin-bottom:2px}
+  #log .l.progress{color:var(--accent)}
+  #log .l.heal{color:var(--warn);font-weight:600}
+  #log .l.done{color:var(--good);font-weight:600}
+  #log .l.error{color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
+  .badge.good{background:rgba(62,207,142,.15);color:var(--good);border:1px solid rgba(62,207,142,.3)}
+  .badge.warn{background:rgba(242,169,59,.15);color:var(--warn);border:1px solid rgba(242,169,59,.3)}
+  .badge.bad{background:rgba(242,84,59,.15);color:var(--bad);border:1px solid rgba(242,84,59,.3)}
+  .diff{font-family:var(--mono);font-size:11.5px;background:#07080b;border:1px solid var(--border);
+    border-radius:6px;padding:10px;margin-top:8px;border-left:3px solid var(--warn)}
+  .diff .before{color:var(--bad);text-decoration:line-through;margin-top:4px}
+  .diff .after{color:var(--good);font-weight:600;margin-top:2px}
+  .empty{color:var(--muted);font-size:12px;padding:12px 0;text-align:center}
+  .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--bad);margin-right:6px}
+  .status-dot.on{background:var(--good);box-shadow:0 0 8px var(--good)}
+  .footer-note{color:var(--muted);font-size:11px;margin-top:24px;line-height:1.6}
+  code{background:#07080b;padding:2px 6px;border-radius:4px;font-size:11.5px;font-family:var(--mono);color:#9ecbff}
+  .preset-badge{background:#1e222d;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer}
+  .preset-badge:hover{border-color:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+
+<h1>NeuroScrape — AI &amp; Backend Test Console <span class="tag-hero">Hackathon Engine</span></h1>
+<div class="sub">
+  Test harness for the autonomous self-healing scraping engine built on Bright Data Scraper Studio &amp; local NeuroAnchor AI.
+</div>
+
+<div class="panel" style="margin-bottom:16px">
+  <div class="row" style="align-items:center">
+    <div style="flex:1;min-width:240px">
+      <label>Backend Base URL</label>
+      <input type="url" id="apiBase" value="http://localhost:8000" style="margin-bottom:0" />
+    </div>
+    <div style="padding-top:16px">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText" style="font-size:12px;color:var(--muted)">Checking connection...</span>
+    </div>
+    <div style="padding-top:16px">
+      <button class="btn small" onclick="checkHealth()">Ping /health</button>
+    </div>
+  </div>
+</div>
+
+<div class="grid">
+
+  <!-- LEFT: Scrape Builder & Navigation -->
+  <div>
+    <div class="panel">
+      <h2>1. Request Builder</h2>
+      
+      <div style="margin-bottom:12px">
+        <label>Preset Connectors (Idea Gallery)</label>
+        <div class="row">
+          <span class="preset-badge" onclick="loadPreset('ecommerce')">🛍️ E-Commerce</span>
+          <span class="preset-badge" onclick="loadPreset('docs_to_rag')">📚 Docs to RAG</span>
+          <span class="preset-badge" onclick="loadPreset('job_board')">💼 Job Board</span>
+          <span class="preset-badge" onclick="loadPreset('dev_trend')">🚀 Dev Trends</span>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-mode="plain" onclick="setMode('plain')">Plain English</div>
+        <div class="tab" data-mode="teach" onclick="setMode('teach')">Teach by Example</div>
+        <div class="tab" data-mode="agentic" onclick="setMode('agentic')">Agentic Crawler</div>
+      </div>
+
+      <label>Target URL</label>
+      <input type="url" id="targetUrl" value="https://webscraper.io/test-sites/e-commerce/allinone/computers/laptops" />
+
+      <div id="mode-plain">
+        <label>Field Descriptions</label>
+        <div id="fieldList"></div>
+        <div class="row" style="margin-top:6px">
+          <button class="btn small" onclick="addField()">+ Add Field</button>
+        </div>
+      </div>
+
+      <div id="mode-teach" style="display:none">
+        <label>Example text on target page (exact string)</label>
+        <input type="text" id="teachExample" value="$2,499.00" />
+        <label>Field Name</label>
+        <input type="text" id="teachLabel" value="price" />
+      </div>
+
+      <div id="mode-agentic" style="display:none">
+        <label>Agent Goal (Multi-Step Navigation)</label>
+        <input type="text" id="agenticGoal" value="traverse product category pages and collect detail listings" />
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" onclick="runScrape()">▶ Run Scrape</button>
+        <button class="btn warn" onclick="simulateChange()">⚡ Simulate Site Change &amp; Re-run</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Live Telemetry Stream <span id="jobIdLabel" style="color:var(--muted);font-weight:400;text-transform:none"></span></h2>
+      <div id="log"><div class="empty">No active job. Click "Run Scrape" to stream logs.</div></div>
+    </div>
+
+    <!-- Scrape -> RAG Panel -->
+    <div class="panel">
+      <h2>Scrape &rarr; RAG Knowledge Base</h2>
+      <div class="row" style="margin-bottom:8px">
+        <button class="btn small" onclick="indexCurrentJobToRAG()">Index Scraped Data to Vector Store</button>
+        <span id="ragIndexStatus" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <label>Ask Question with Citations</label>
+      <input type="text" id="ragQuestion" placeholder="e.g. Which laptop has 32GB RAM and what is its price?" />
+      <div class="row">
+        <button class="btn small primary" onclick="askRAG()">Ask Knowledge Base</button>
+      </div>
+      <div id="ragAnswer" style="margin-top:10px;font-size:12px;color:var(--text)"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Self-Healing Replay & Results -->
+  <div>
+    <div class="panel">
+      <h2>Self-Healing Replay (Hero Feature)</h2>
+      <div id="healPanel" class="empty">No heal events yet. Click "Simulate Site Change &amp; Re-run" to trigger live instant repair.</div>
+    </div>
+
+    <div class="panel">
+      <h2>Structured Results &amp; Karma Trust Badges</h2>
+      <div id="resultsTable" class="empty">No results extracted yet.</div>
+      <div class="row" style="margin-top:12px;display:none" id="exportRow">
+        <button class="btn small" onclick="exportAs('json')">📦 Export JSON</button>
+        <button class="btn small" onclick="exportAs('csv')">📊 Export CSV</button>
+        <button class="btn small" onclick="exportAs('markdown')">📝 Export Markdown</button>
+        <button class="btn small" onclick="exportAs('rag_chunks')">🧠 Export RAG Chunks</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer-note">
+  <strong>Endpoints Tested:</strong> <code>GET /health</code>, <code>POST /api/scrape/plan</code>,
+  <code>POST /api/scrape/run</code>, <code>POST /api/scrape/teach</code>,
+  <code>POST /api/scrape/agentic</code>, <code>WS /ws/jobs/{job_id}</code>,
+  <code>POST /api/dev/simulate-site-change/{job_id}</code>,
+  <code>GET /api/heal-events/{collector_id}</code>,
+  <code>POST /api/rag/index/{job_id}</code>,
+  <code>POST /api/rag/ask</code>,
+  <code>GET /api/export/{job_id}</code>.
+</div>
+
+<script>
+let mode = 'plain';
+let currentJobId = null;
+let currentCollectorId = null;
+let ws = null;
+
+function apiBase(){ return document.getElementById('apiBase').value.replace(/\/$/, ''); }
+
+function setMode(m){
+  mode = m;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === m));
+  ['plain','teach','agentic'].forEach(k => {
+    document.getElementById('mode-' + k).style.display = (k === m) ? 'block' : 'none';
+  });
+}
+
+function addField(value=''){
+  const wrap = document.getElementById('fieldList');
+  const row = document.createElement('div');
+  row.className = 'field-row';
+  row.innerHTML = `
+    <input type="text" placeholder="e.g. product price" value="${value}">
+    <button class="btn small danger" onclick="this.parentElement.remove()">✕</button>`;
+  wrap.appendChild(row);
+}
+
+addField('product title');
+addField('price in USD');
+addField('stock status');
+
+function loadPreset(presetKey){
+  const presets = {
+    ecommerce: {
+      url: "https://webscraper.io/test-sites/e-commerce/allinone/computers/laptops",
+      fields: ["product title", "price in USD", "stock status", "rating"]
+    },
+    docs_to_rag: {
+      url: "https://docs.brightdata.com/cli/overview",
+      fields: ["page title", "section heading", "code snippet", "body text"]
+    },
+    job_board: {
+      url: "https://news.ycombinator.com/jobs",
+      fields: ["job title", "company name", "location", "salary range"]
+    },
+    dev_trend: {
+      url: "https://github.com/fastapi/fastapi/releases",
+      fields: ["release version", "release date", "highlights"]
+    }
+  };
+  const p = presets[presetKey];
+  if (!p) return;
+  document.getElementById('targetUrl').value = p.url;
+  document.getElementById('fieldList').innerHTML = '';
+  p.fields.forEach(f => addField(f));
+  log(`Loaded preset: ${presetKey}`);
+}
+
+function log(msg, cls=''){
+  const el = document.getElementById('log');
+  if (el.querySelector('.empty')) el.innerHTML = '';
+  const line = document.createElement('div');
+  line.className = 'l ' + cls;
+  const t = new Date().toLocaleTimeString();
+  line.textContent = `[${t}] ${msg}`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function checkHealth(){
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  try {
+    const res = await fetch(apiBase() + '/health');
+    if (!res.ok) throw new Error('status ' + res.status);
+    const d = await res.json();
+    dot.classList.add('on');
+    text.textContent = `Online (${d.service} — NeuroAnchor ready)`;
+  } catch (e) {
+    dot.classList.remove('on');
+    text.textContent = 'Unreachable: ' + e.message;
+  }
+}
+
+function openSocket(jobId){
+  if (ws) { try { ws.close(); } catch(e){} }
+  const wsUrl = apiBase().replace(/^http/, 'ws') + `/ws/jobs/${jobId}`;
+  try {
+    ws = new WebSocket(wsUrl);
+    ws.onmessage = (evt) => {
+      let data;
+      try { data = JSON.parse(evt.data); } catch(e) { data = { type: 'log', message: evt.data }; }
+      handleWsEvent(data);
+    };
+    ws.onerror = () => log('WebSocket connection fallback / active polling', 'progress');
+  } catch(e) {
+    log('Could not open WebSocket: ' + e.message, 'error');
+  }
+}
+
+function handleWsEvent(data){
+  const type = data.type || 'log';
+  if (type === 'progress') log(data.message || 'Progress update', 'progress');
+  else if (type === 'heal_event') { log('✨ Heal Event: ' + (data.message || ''), 'heal'); renderHealEvent(data); }
+  else if (type === 'done') { log('✔ Scrape Completed Successfully', 'done'); if (data.rows) renderResults(data.rows); }
+  else if (type === 'error') log('❌ Error: ' + (data.message || 'unknown'), 'error');
+  else log(data.message || JSON.stringify(data));
+}
+
+async function runScrape(){
+  const url = document.getElementById('targetUrl').value.trim();
+  if (!url) { alert('Please enter target URL'); return; }
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('healPanel').innerHTML = '<div class="empty">No heal events yet.</div>';
+
+  let endpoint, body;
+  if (mode === 'plain') {
+    const fields = Array.from(document.querySelectorAll('#fieldList input')).map(i => i.value.trim()).filter(Boolean);
+    if (!fields.length) { alert('Add at least one field description'); return; }
+    endpoint = '/api/scrape/run';
+    body = { url, fields, mode: 'plain_english' };
+  } else if (mode === 'teach') {
+    const example = document.getElementById('teachExample').value.trim();
+    const label = document.getElementById('teachLabel').value.trim();
+    if (!example || !label) { alert('Fill both example text and field name'); return; }
+    endpoint = '/api/scrape/teach';
+    body = { url, label, example };
+  } else {
+    const goal = document.getElementById('agenticGoal').value.trim();
+    if (!goal) { alert('Enter a navigation goal'); return; }
+    endpoint = '/api/scrape/agentic';
+    body = { url, goal };
+  }
+
+  log(`Submitting ${mode} scrape for ${url}...`);
+  try {
+    const res = await fetch(apiBase() + endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.status);
+    currentJobId = data.job_id;
+    currentCollectorId = data.collector_id || null;
+    document.getElementById('jobIdLabel').textContent = '— Job ' + currentJobId;
+    log('Job created: ' + currentJobId);
+    openSocket(currentJobId);
+    if (data.rows) renderResults(data.rows);
+  } catch(e) {
+    log('Submit failed: ' + e.message, 'error');
+  }
+}
+
+async function simulateChange(){
+  if (!currentJobId) { alert('Run a scrape first'); return; }
+  log('Simulating site redesign & triggering Two-Layer Self-Healing...', 'heal');
+  try {
+    const res = await fetch(apiBase() + `/api/dev/simulate-site-change/${currentJobId}`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.status);
+    log('Site change simulation active. Re-anchoring via NeuroAnchor model...', 'progress');
+  } catch(e) {
+    log('Simulate change failed: ' + e.message, 'error');
+  }
+}
+
+function renderHealEvent(evt){
+  const panel = document.getElementById('healPanel');
+  if (panel.querySelector('.empty')) panel.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'diff';
+  const layerBadge = evt.method === 'local_model'
+    ? `<span class="badge good">Layer 1: Local NeuroAnchor</span>`
+    : `<span class="badge warn">Layer 2: Bright Data Cloud</span>`;
+  div.innerHTML = `
+    <div style="margin-bottom:6px">${layerBadge}
+      <span style="color:var(--muted);margin-left:8px">Confidence: ${(evt.confidence ?? 0).toFixed?.(2) ?? evt.confidence ?? '—'}</span>
+      <span style="color:var(--muted);margin-left:8px">Latency: ${evt.latency_ms ?? '—'} ms</span>
+    </div>
+    <div class="before">Broken Selector: ${evt.before_selector || '(missing)'}</div>
+    <div class="after">Healed Selector:  ${evt.after_selector || '(missing)'}</div>
+  `;
+  panel.prepend(div);
+}
+
+function renderResults(rows){
+  const el = document.getElementById('resultsTable');
+  document.getElementById('exportRow').style.display = 'flex';
+  if (!rows || !rows.length) { el.innerHTML = '<div class="empty">No rows returned.</div>'; return; }
+  const cols = Object.keys(rows[0]).filter(c => c !== 'karma_score' && c !== 'karma_flags');
+  let html = '<table><thead><tr>';
+  cols.forEach(c => html += `<th>${c.replace('_', ' ')}</th>`);
+  html += '<th>Karma Trust</th></tr></thead><tbody>';
+  rows.forEach(r => {
+    html += '<tr>';
+    cols.forEach(c => html += `<td>${r[c] ?? ''}</td>`);
+    const k = r.karma_score ?? null;
+    let badgeCls = 'good';
+    if (k !== null) { badgeCls = k >= 70 ? 'good' : (k >= 40 ? 'warn' : 'bad'); }
+    html += `<td>${k !== null ? `<span class="badge ${badgeCls}">${k}/100</span>` : '—'}</td>`;
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+async function indexCurrentJobToRAG(){
+  if (!currentJobId) { alert('Run a scrape first'); return; }
+  const statusEl = document.getElementById('ragIndexStatus');
+  statusEl.textContent = 'Indexing into ChromaDB...';
+  try {
+    const res = await fetch(apiBase() + `/api/rag/index/${currentJobId}`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.status);
+    statusEl.textContent = `✔ Indexed ${data.chunks_indexed} chunks into vector store.`;
+  } catch(e) {
+    statusEl.textContent = 'Index failed: ' + e.message;
+  }
+}
+
+async function askRAG(){
+  const q = document.getElementById('ragQuestion').value.trim();
+  if (!q) { alert('Enter a question'); return; }
+  const ansEl = document.getElementById('ragAnswer');
+  ansEl.innerHTML = '<em>Searching vector embeddings and synthesizing answer...</em>';
+  try {
+    const res = await fetch(apiBase() + `/api/rag/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q, job_id: currentJobId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.status);
+    
+    let citationsHtml = '';
+    if (data.citations && data.citations.length) {
+      citationsHtml = '<div style="margin-top:8px;font-size:11px;color:var(--muted)"><strong>Sources:</strong><ul>' +
+        data.citations.map(c => `<li>${c.source_url} (Row ${c.row_index}): <code>${c.snippet}</code></li>`).join('') +
+        '</ul></div>';
+    }
+
+    ansEl.innerHTML = `
+      <div style="background:#07080b;border:1px solid var(--border);border-radius:6px;padding:10px">
+        <div style="white-space:pre-wrap;line-height:1.5">${data.answer}</div>
+        ${citationsHtml}
+      </div>`;
+  } catch(e) {
+    ansEl.innerHTML = '<span style="color:var(--bad)">Error: ' + e.message + '</span>';
+  }
+}
+
+async function exportAs(fmt){
+  if (!currentJobId) { alert('Run a scrape first'); return; }
+  const url = apiBase() + `/api/export/${currentJobId}?format=${fmt}`;
+  window.open(url, '_blank');
+}
+
+checkHealth();
+</script>
+</body>
+</html>
