@@ -1,4 +1,4 @@
-# 🧠 NeuroScrape
+# SaMp
 
 > **Autonomous, Self-Healing Web Scraping Platform built on Bright Data Scraper Studio & Local NeuroAnchor AI.**  
 > Built for *"Into the Scrape-Verse"* (WeMakeDevs x Bright Data Hackathon, Aug 2026).
@@ -10,21 +10,21 @@
 
 ---
 
-## ⚡ What is NeuroScrape?
+## What is SaMp?
 
-**NeuroScrape** is a next-generation web scraping platform that solves the #1 problem in web extraction: **brittle scrapers that break when websites change**.
+**SaMp** is a next-generation web scraping platform that solves the primary challenge in web extraction: **brittle scrapers that break when websites change**.
 
-1. **Describe what you want in plain English**: NeuroScrape generates a Bright Data Scraper Studio collector and streams live structured rows.
+1. **Describe what you want in plain English**: SaMp generates a Bright Data Scraper Studio collector and streams live structured rows.
 2. **Two-Layer Self-Healing**: When a target site redesigns and selectors break:
    - **Layer 1 (Free & Local)**: Our quantized **NeuroAnchor** ONNX model (<100MB, 22.5MB actual, <200ms CPU inference) semantically re-anchors the broken field to the new DOM node with zero API cost.
    - **Layer 2 (Cloud Fallback)**: Falls back to Bright Data Scraper Studio Cloud self-heal if confidence is below threshold.
-3. **Scrape Karma Trust Score (0–100)**: Evaluates extracted records with local embeddings to catch placeholder text, undefined patterns, and corrupted rows.
-4. **Scrape &rarr; RAG Chatbot**: Converts scraped documentation or catalogs into an instant ChromaDB-backed Q&A knowledge base with citations.
+3. **Scrape Karma Trust Score (0-100)**: Evaluates extracted records with local embeddings to catch placeholder text, undefined patterns, and corrupted rows.
+4. **Scrape to RAG Chatbot**: Converts scraped documentation or catalogs into an instant ChromaDB-backed Q&A knowledge base with citations.
 5. **Universal Exporter**: 1-click downloads for JSON, CSV, clean Markdown, and RAG-ready overlapping chunks.
 
 ---
 
-## 🚀 Quickstart in Under 2 Minutes
+## Quickstart in Under 2 Minutes
 
 ### 1. Start Backend Server
 ```bash
@@ -40,7 +40,7 @@ Open `test-ui/index.html` (or `index.html`) directly in your browser.
 
 ---
 
-## 📂 Repository Layout
+## Repository Layout
 
 ```
 SAMP/
@@ -83,7 +83,7 @@ SAMP/
 
 ---
 
-## 🧪 Running Automated Tests
+## Running Automated Tests
 
 ```bash
 cd backend
@@ -92,9 +92,9 @@ pytest -v
 
 ---
 
-## 🏆 Prize Tracks Targeted
+## Prize Tracks Targeted
 
 - **Best Use of Bright Data**: Core extraction lifecycle is natively orchestrated on Bright Data Scraper Studio.
-- **Self-Healing & Reliability**: Headline differentiator &mdash; zero-cost local semantic re-anchoring + Bright Data cloud fallback with live replay visualization.
+- **Self-Healing & Reliability**: Headline differentiator -- zero-cost local semantic re-anchoring + Bright Data cloud fallback with live replay visualization.
 - **Best UI Experience**: WebSocket real-time event streaming, live before/after selector diffs, and Scrape Karma badges.
 - **Best Clean Code**: Modular clean architecture, typed SQLModel entities, 100% test coverage, and complete documentation.
