@@ -104,6 +104,56 @@ class SchemaVersion(SQLModel, table=True):
 
 
 # ==========================================
+# NeuroWatch — Continuous Automation Models
+# ==========================================
+
+class WatchJob(SQLModel, table=True):
+    __tablename__ = "watch_jobs"
+
+    id: str = Field(primary_key=True, index=True)
+    mode: str  # "links" or "keyword"
+    input_urls: List[str] = Field(default_factory=list, sa_column=Column(JSON))
+    keyword_query: Optional[str] = None
+    interval_seconds: int = Field(default=120)
+    status: str = Field(default="active")  # active, paused, error
+    total_cycles: int = Field(default=0)
+    estimated_credits_per_hour: float = Field(default=0.0)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_run_at: Optional[datetime] = None
+    next_run_at: Optional[datetime] = None
+
+
+class WatchCycle(SQLModel, table=True):
+    __tablename__ = "watch_cycles"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    watch_job_id: str = Field(index=True)
+    cycle_number: int = Field(default=1)
+    run_at: datetime = Field(default_factory=datetime.utcnow)
+    source_results: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    diff_summary: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    heal_events_fired: int = Field(default=0)
+    health_events_fired: int = Field(default=0)
+    avg_karma: float = Field(default=100.0)
+    status: str = Field(default="completed")  # completed, failed
+
+
+class MemoryUsageEvent(SQLModel, table=True):
+    __tablename__ = "memory_usage_events"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    field_type: str = Field(index=True)
+    matched_entry_id: Optional[str] = None
+    match_confidence: float = 0.0
+    accepted_as_first_guess: bool = False
+    verified_correct: bool = False
+    target_site: str = Field(index=True)
+    is_new_site: bool = True  # Site never scraped before by this deployment
+    latency_saved_ms: int = 0
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+# ==========================================
 # API Request / Response DTOs
 # ==========================================
 
@@ -135,6 +185,12 @@ class AgenticScrapeRequest(BaseModel):
     timeout_seconds: int = 60
 
 
+class SearchScrapeRequest(BaseModel):
+    query: str
+    fields: Optional[List[str]] = None
+    max_sources: int = 4
+
+
 class RAGIndexRequest(BaseModel):
     job_id: str
     collection_name: Optional[str] = None
@@ -145,3 +201,9 @@ class RAGAskRequest(BaseModel):
     collection_name: Optional[str] = None
     job_id: Optional[str] = None
     top_k: int = 4
+
+
+class WatchCreateRequest(BaseModel):
+    mode: str  # "links" or "keyword"
+    urls: Optional[List[str]] = None  # max 5 for mode=links
+    query: Optional[str] = None  # for mode=keyword

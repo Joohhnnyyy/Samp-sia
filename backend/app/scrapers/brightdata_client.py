@@ -89,6 +89,30 @@ class BrightDataClient:
         from .scrapling_fallback import scrapling_fetcher
         return await scrapling_fetcher.fetch_and_extract(target_url, active_selectors, field_specs, max_rows)
 
+    async def fetch_rendered_html(self, target_url: str) -> Optional[str]:
+        """
+        Uses Bright Data Web Unlocker API to fetch fully-rendered HTML with CAPTCHA & anti-bot bypass.
+        Endpoint: https://api.brightdata.com/request
+        """
+        if not self.is_configured:
+            return None
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                payload = {
+                    "zone": self.zone or "web_unlocker1",
+                    "url": target_url,
+                    "format": "raw"
+                }
+                resp = await client.post("https://api.brightdata.com/request", headers=self.headers, json=payload)
+                if resp.status_code == 200 and resp.text:
+                    logger.info(f"Successfully fetched '{target_url}' via Bright Data Web Unlocker ({self.zone})")
+                    return resp.text
+                else:
+                    logger.warning(f"Bright Data Web Unlocker status {resp.status_code}: {resp.text[:200]}")
+        except Exception as e:
+            logger.warning(f"Bright Data Web Unlocker request failed: {e}")
+        return None
+
     async def cloud_self_heal(
         self,
         collector_id: Optional[str],
@@ -120,3 +144,4 @@ class BrightDataClient:
 
 
 brightdata_client = BrightDataClient()
+

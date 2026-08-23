@@ -101,7 +101,7 @@ async def export_job(
             "job_id": job.id,
             "source_url": job.url,
             "chunk_count": len(chunks),
-            "chunks": [c.dict() for c in chunks]
+            "chunks": [c.model_dump() for c in chunks]
         }
         return Response(
             content=json.dumps(payload, indent=2),

@@ -103,3 +103,97 @@ async def run_health_check(collector_id: str, db: Session = Depends(get_session)
     db.refresh(health_event)
 
     return health_event
+
+
+# ==========================================
+# Periodic Background Scraper Health Monitor
+# ==========================================
+
+import asyncio
+from ..db import engine as db_engine
+from ..ws.manager import ws_manager
+
+class ScraperHealthScheduler:
+    def __init__(self):
+        self._task: Optional[asyncio.Task] = None
+        self._running = False
+
+    async def start(self, interval_seconds: int = 300):
+        self._running = True
+        self._task = asyncio.create_task(self._periodic_loop(interval_seconds))
+        logger.info("ScraperHealthScheduler started (interval=300s).")
+
+    async def stop(self):
+        self._running = False
+        if self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except (asyncio.CancelledError, Exception):
+                pass
+        logger.info("ScraperHealthScheduler stopped.")
+
+    async def _periodic_loop(self, interval_seconds: int):
+        while self._running:
+            try:
+                await asyncio.sleep(interval_seconds)
+                await self._check_all_collectors()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Health monitor periodic run error: {e}")
+
+    async def _check_all_collectors(self):
+        with Session(db_engine) as db:
+            collectors = db.exec(select(Collector).where(Collector.status == "active")).all()
+            for c in collectors:
+                recent_jobs = db.exec(
+                    select(Job)
+                    .where(Job.collector_id == c.id)
+                    .order_by(Job.created_at.desc())
+                    .limit(3)
+                ).all()
+
+                if not recent_jobs:
+                    continue
+
+                latest = recent_jobs[0]
+                drift_detected = False
+                status = "healthy"
+                message = f"Collector '{c.name}' operating nominally."
+
+                if latest.avg_karma_score is not None and latest.avg_karma_score < 60:
+                    drift_detected = True
+                    status = "warning"
+                    message = f"Extraction quality degradation on {c.name}: Karma {latest.avg_karma_score}/100."
+
+                if latest.status == "failed":
+                    drift_detected = True
+                    status = "broken"
+                    message = f"Recent extraction failure on {c.name}: {latest.error}"
+
+                he = HealthEvent(
+                    collector_id=c.id,
+                    status=status,
+                    drift_detected=drift_detected,
+                    row_count=latest.row_count,
+                    missing_fields=[],
+                    avg_karma=latest.avg_karma_score or 100.0,
+                    message=message,
+                    timestamp=datetime.utcnow()
+                )
+                db.add(he)
+                db.commit()
+
+                # Broadcast health alert over global WS if degraded
+                if drift_detected:
+                    await ws_manager.broadcast_to_global({
+                        "type": "health_alert",
+                        "collector_id": c.id,
+                        "status": status,
+                        "message": message,
+                        "timestamp": he.timestamp.isoformat()
+                    })
+
+health_scheduler = ScraperHealthScheduler()
+

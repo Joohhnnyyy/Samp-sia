@@ -8,6 +8,7 @@ import uuid
 import time
 import asyncio
 import logging
+import urllib.parse
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
@@ -19,11 +20,12 @@ from ..core.robots_check import check_compliance
 from ..core.llm import llm_client
 from ..models.schemas import (
     Job, Collector, ScrapedRow, SchemaVersion,
-    ScrapePlanRequest, ScrapeRunRequest, TeachScrapeRequest, AgenticScrapeRequest
+    ScrapePlanRequest, ScrapeRunRequest, TeachScrapeRequest, AgenticScrapeRequest, SearchScrapeRequest
 )
 from ..scrapers.brightdata_client import brightdata_client
 from ..scrapers.teach_by_example import teach_learner
 from ..scrapers.agentic_crawler import agentic_crawler
+from ..scrapers.web_search_scraper import web_search_scraper
 from ..healing.karma_score import karma_engine
 from ..ws.manager import ws_manager
 
@@ -77,10 +79,24 @@ async def run_scrape(
         plan = await llm_client.generate_scrape_plan(req.url, field_descriptions)
         
         field_specs = [f.dict() for f in plan.fields]
-        selector_map = {
-            f.name: f.selector_hint or f".{f.name}, [data-{f.name}]"
-            for f in plan.fields
-        }
+        selector_map = {}
+        memory_prehealed = {}
+
+        # 🧠 NeuroAnchor Collective Memory Pre-Heal Check (Section 3.2)
+        try:
+            from ..healing.collective_memory import collective_memory
+            for f in plan.fields:
+                f_desc = f.description or f.name
+                mem_sel, mem_id, mem_conf = collective_memory.find_preheal_pattern(f_desc, [], req.url)
+                if mem_sel and mem_conf >= settings.MEMORY_PREFETCH_THRESHOLD:
+                    selector_map[f.name] = mem_sel
+                    memory_prehealed[f.name] = {"entry_id": mem_id, "confidence": mem_conf}
+                    logger.info(f"🧠 [Collective Memory Pre-Heal] Reused immune pattern for '{f.name}' -> '{mem_sel}' (conf: {mem_conf:.2f}) on new site {req.url}")
+                else:
+                    selector_map[f.name] = f.selector_hint or f".{f.name}, [data-{f.name}]"
+        except Exception as e:
+            logger.debug(f"Memory prefetch check skipped: {e}")
+            selector_map = {f.name: f.selector_hint or f".{f.name}, [data-{f.name}]" for f in plan.fields}
 
         bd_id = await brightdata_client.create_collector(
             name=f"Collector-{req.url.split('//')[-1][:20]}",
@@ -105,7 +121,7 @@ async def run_scrape(
             version_num=1,
             field_specs=field_specs,
             selector_map=selector_map,
-            commit_message="Initial schema created"
+            commit_message="Initial schema created" + (f" (Pre-healed {len(memory_prehealed)} fields via Collective Memory)" if memory_prehealed else "")
         )
         db.add(schema_v)
         db.commit()
@@ -265,6 +281,63 @@ async def agentic_scrape(
     }
 
 
+@router.post("/search")
+async def search_and_scrape_endpoint(
+    req: SearchScrapeRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_session)
+):
+    """
+    Autonomous Keyword Web Discovery & Deep Extraction:
+    Takes search keywords, automatically discovers top authority URLs across the internet,
+    concurrently extracts structured data, evaluates Scrape Karma, and streams live results.
+    """
+    job_id = f"job_search_{uuid.uuid4().hex[:8]}"
+    collector_id = f"col_search_{uuid.uuid4().hex[:8]}"
+    target_query_url = f"https://search.web/q={urllib.parse.quote(req.query)}"
+    fields = req.fields or ["headline", "key_details", "summary", "source_url"]
+
+    collector = Collector(
+        id=collector_id,
+        name=f"Web Search: {req.query[:30]}",
+        target_url=target_query_url,
+        schema_version=1,
+        active_selector_map={f: f".{f}" for f in fields},
+        field_specs=[{"name": f, "description": f} for f in fields],
+        status="active"
+    )
+    db.add(collector)
+
+    job = Job(
+        id=job_id,
+        collector_id=collector_id,
+        url=f"search://{req.query}",
+        mode="web_search",
+        status="running",
+        plan={"query": req.query, "fields": fields, "max_sources": req.max_sources}
+    )
+    db.add(job)
+    db.commit()
+
+    background_tasks.add_task(
+        _execute_search_scrape_job,
+        job_id=job_id,
+        collector_id=collector_id,
+        query=req.query,
+        fields=fields,
+        max_sources=req.max_sources
+    )
+
+    return {
+        "job_id": job_id,
+        "collector_id": collector_id,
+        "query": req.query,
+        "status": "running",
+        "ws_url": f"/ws/jobs/{job_id}"
+    }
+
+
+@router.get("/jobs/{job_id}")
 @router.get("/{job_id}")
 async def get_job(job_id: str, db: Session = Depends(get_session)):
     """
@@ -366,6 +439,51 @@ async def _execute_scrape_job(job_id: str, collector_id: str, url: str, max_rows
 
             avg_karma = round(karma_sum / len(evaluated_rows), 1) if evaluated_rows else 0.0
 
+            # 🧠 NeuroAnchor Collective Memory Verification & Reinforcement (Section 3.3, 3.4)
+            try:
+                from ..healing.collective_memory import collective_memory
+                from ..healing.field_normalizer import field_normalizer
+                for f in (collector.field_specs or []):
+                    fname = f.get("name", "")
+                    fdesc = f.get("description", fname)
+                    canon_type, _ = field_normalizer.normalize(fdesc)
+                    mem_sel, mem_id, mem_conf = collective_memory.find_preheal_pattern(fdesc, [], url)
+
+                    is_verified_correct = (avg_karma >= 50.0 and len(evaluated_rows) > 0)
+                    was_accepted = bool(mem_sel and mem_conf >= settings.MEMORY_PREFETCH_THRESHOLD)
+
+                    # Log consultation telemetry
+                    collective_memory.log_consultation(
+                        db=db,
+                        field_type=canon_type,
+                        matched_entry_id=mem_id,
+                        match_confidence=mem_conf,
+                        accepted_as_first_guess=was_accepted,
+                        verified_correct=(was_accepted and is_verified_correct),
+                        target_site=url,
+                        latency_saved_ms=250 if was_accepted else 0
+                    )
+
+                    # Reinforce or Decay
+                    if was_accepted and mem_id:
+                        if is_verified_correct:
+                            collective_memory.reinforce_pattern(mem_id, url)
+                            logger.info(f"✨ [Collective Memory] Verified & reinforced immune pattern '{mem_id}' for '{canon_type}' on site '{url}'")
+                        else:
+                            collective_memory.decay_pattern(mem_id)
+                            logger.warning(f"⚠️ [Collective Memory] Pattern '{mem_id}' failed quality check on '{url}' (Karma: {avg_karma}). Decayed confidence.")
+                    elif not was_accepted and is_verified_correct and fname in selectors:
+                        # Opportunistic auto-capture of verified working pattern
+                        collective_memory.record_heal(
+                            field_description=fdesc,
+                            selector=selectors[fname],
+                            source_url=url,
+                            method="first_attempt_discovery",
+                            confidence=0.85
+                        )
+            except Exception as mem_err:
+                logger.debug(f"Collective memory verification hook note: {mem_err}")
+
             # Update Job & Collector
             job.status = "completed"
             job.row_count = len(evaluated_rows)
@@ -390,3 +508,88 @@ async def _execute_scrape_job(job_id: str, collector_id: str, url: str, max_rows
             db.add(job)
             db.commit()
             await ws_manager.send_error(job_id, f"Execution failed: {str(e)}")
+
+
+async def _execute_search_scrape_job(job_id: str, collector_id: str, query: str, fields: List[str], max_sources: int = 4):
+    """
+    Background worker for autonomous cross-web search and scraping.
+    """
+    from ..db import engine
+    start_time = time.time()
+
+    async def ws_cb(level: str, msg: str):
+        await ws_manager.send_log(job_id, msg)
+
+    await ws_manager.send_log(job_id, f"🌐 Initiating Autonomous Deep Web Search for: '{query}'...")
+    await ws_manager.send_progress(job_id, 15, "Discovering top authority URLs across the internet...")
+
+    with Session(engine) as db:
+        collector = db.get(Collector, collector_id)
+        job = db.get(Job, job_id)
+        if not collector or not job:
+            return
+
+        try:
+            res = await web_search_scraper.search_and_scrape(
+                query=query,
+                fields=fields,
+                max_sources=max_sources,
+                ws_callback=ws_cb
+            )
+
+            raw_rows = res["rows"]
+            evaluated_rows = []
+            karma_sum = 0
+
+            for idx, r in enumerate(raw_rows):
+                score = r.get("_karma_score", 90)
+                flags = []
+                karma_sum += score
+                r["karma_score"] = score
+                
+                scraped_row = ScrapedRow(
+                    job_id=job_id,
+                    collector_id=collector.id,
+                    row_index=idx,
+                    data=r,
+                    karma_score=score,
+                    karma_flags=flags
+                )
+                db.add(scraped_row)
+                evaluated_rows.append(r)
+
+            avg_karma = round(karma_sum / len(evaluated_rows), 1) if evaluated_rows else 0.0
+
+            # Automatically index to RAG Vector store
+            try:
+                from ..rag.indexer import rag_indexer
+                await rag_indexer.index_job_records(job_id, evaluated_rows)
+                await ws_manager.send_log(job_id, f"🧠 Auto-indexed {len(evaluated_rows)} web knowledge chunks into RAG Vector Store!")
+            except Exception as e:
+                logger.warning(f"Auto-RAG indexing note: {e}")
+
+            # Update Job & Collector
+            job.status = "completed"
+            job.row_count = len(evaluated_rows)
+            job.avg_karma_score = avg_karma
+            job.execution_time_ms = int((time.time() - start_time) * 1000)
+            job.completed_at = datetime.utcnow()
+
+            collector.total_runs += 1
+            collector.updated_at = datetime.utcnow()
+            db.add(job)
+            db.add(collector)
+            db.commit()
+
+            await ws_manager.send_progress(job_id, 100, f"Cross-Web Extraction Complete: {len(evaluated_rows)} records from {res['sources_count']} sources (Avg Karma: {avg_karma})")
+            await ws_manager.send_done(job_id, evaluated_rows, collector_id=collector.id)
+            logger.info(f"Search Job {job_id} completed with {len(evaluated_rows)} records.")
+
+        except Exception as e:
+            logger.error(f"Search job execution failed: {e}")
+            job.status = "failed"
+            job.error = str(e)
+            db.add(job)
+            db.commit()
+            await ws_manager.send_error(job_id, f"Search execution failed: {str(e)}")
+

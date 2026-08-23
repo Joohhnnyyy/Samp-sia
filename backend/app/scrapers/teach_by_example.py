@@ -60,6 +60,19 @@ class TeachByExampleLearner:
         selector, generalized_samples = self._generalize_selector(soup, matched_element)
         clean_label = re.sub(r"[^\w]", "_", label.lower())
 
+        # Record learned rule into NeuroAnchor Collective Memory
+        try:
+            from ..healing.collective_memory import collective_memory
+            collective_memory.record_heal(
+                field_description=label,
+                selector=selector,
+                source_url=url,
+                method="teach_by_example",
+                confidence=0.95 if generalized_samples else 0.80
+            )
+        except Exception as e:
+            logger.debug(f"Collective memory teach record note: {e}")
+
         return {
             "field_name": clean_label,
             "selector": selector,

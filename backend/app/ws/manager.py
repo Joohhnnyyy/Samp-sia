@@ -16,7 +16,7 @@ class ConnectionManager:
     def __init__(self):
         # Map of job_id -> list of active WebSocket connections
         self.active_connections: Dict[str, List[WebSocket]] = {}
-        # Global subscribers (e.g. health dashboard)
+        # Global subscribers (e.g. NeuroWatch aggregate dashboard)
         self.global_connections: List[WebSocket] = []
 
     async def connect(self, websocket: WebSocket, job_id: str):
@@ -26,6 +26,12 @@ class ConnectionManager:
         self.active_connections[job_id].append(websocket)
         logger.info(f"WebSocket client connected to job stream: {job_id}")
 
+    async def connect_global(self, websocket: WebSocket):
+        """Connect a subscriber to the global aggregate feed (all watches)."""
+        await websocket.accept()
+        self.global_connections.append(websocket)
+        logger.info("WebSocket client connected to global aggregate feed.")
+
     def disconnect(self, websocket: WebSocket, job_id: str):
         if job_id in self.active_connections:
             if websocket in self.active_connections[job_id]:
@@ -33,6 +39,11 @@ class ConnectionManager:
             if not self.active_connections[job_id]:
                 del self.active_connections[job_id]
         logger.info(f"WebSocket client disconnected from job stream: {job_id}")
+
+    def disconnect_global(self, websocket: WebSocket):
+        if websocket in self.global_connections:
+            self.global_connections.remove(websocket)
+        logger.info("WebSocket client disconnected from global aggregate feed.")
 
     async def broadcast_to_job(self, job_id: str, message: Dict[str, Any]):
         """Broadcasts a structured JSON event to all listeners of a specific job_id."""
@@ -46,6 +57,17 @@ class ConnectionManager:
                     dead_connections.append(connection)
             for dead in dead_connections:
                 self.disconnect(dead, job_id)
+
+    async def broadcast_to_global(self, message: Dict[str, Any]):
+        """Broadcasts to all global aggregate feed subscribers."""
+        dead = []
+        for conn in self.global_connections:
+            try:
+                await conn.send_json(message)
+            except Exception:
+                dead.append(conn)
+        for d in dead:
+            self.disconnect_global(d)
 
     async def send_log(self, job_id: str, msg: str, level: str = "info"):
         await self.broadcast_to_job(job_id, {
@@ -82,5 +104,11 @@ class ConnectionManager:
             "message": error_msg
         })
 
+    async def send_watch_update(self, watch_id: str, update_data: Dict[str, Any]):
+        """Send a watch_update event to the per-watch channel and global feed."""
+        await self.broadcast_to_job(f"watch_{watch_id}", update_data)
+        await self.broadcast_to_global(update_data)
+
 
 ws_manager = ConnectionManager()
+

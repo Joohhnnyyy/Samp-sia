@@ -1,0 +1,180 @@
+taxonomy:
+  price:
+    description: Product price, cost, currency amount, fee, or rate
+    synonyms:
+    - price
+    - cost
+    - amount
+    - retail price
+    - sale price
+    - item price
+    - price in usd
+    - discounted price
+    - pricing
+    - rate
+    - fee
+  title:
+    description: Item name, product title, headline, heading, or article name
+    synonyms:
+    - title
+    - product name
+    - item title
+    - product title
+    - headline
+    - name
+    - article title
+    - page title
+    - heading
+    - job title
+    - repo name
+  description:
+    description: Item description, details, overview, summary, body text, or specifications
+    synonyms:
+    - description
+    - summary
+    - overview
+    - details
+    - product description
+    - body text
+    - about
+    - snippet
+    - highlights
+  stock_status:
+    description: Stock availability, inventory status, units remaining, or delivery
+      state
+    synonyms:
+    - stock status
+    - availability
+    - in stock
+    - inventory
+    - stock level
+    - units remaining
+    - out of stock
+    - sold out
+  rating:
+    description: Customer rating, user score, star rating, or quality points
+    synonyms:
+    - rating
+    - stars
+    - user rating
+    - customer rating
+    - score
+    - review score
+  review_count:
+    description: Total number of customer reviews or feedback count
+    synonyms:
+    - review count
+    - total reviews
+    - ratings count
+    - feedback count
+    - number of ratings
+  author:
+    description: Author name, writer, reporter, maintainer, or publisher
+    synonyms:
+    - author
+    - writer
+    - posted by
+    - published by
+    - creator
+    - reporter
+    - maintainer
+  publish_date:
+    description: Publication date, release date, date posted, or timestamp
+    synonyms:
+    - publish date
+    - release date
+    - date posted
+    - date
+    - timestamp
+    - created at
+    - updated date
+  sku:
+    description: Product SKU, model identifier, part number, or serial code
+    synonyms:
+    - sku
+    - model number
+    - item code
+    - product id
+    - part number
+    - serial number
+  image_url:
+    description: Image link, product photo, thumbnail, or cover art URL
+    synonyms:
+    - image url
+    - product image
+    - thumbnail
+    - photo
+    - picture
+    - cover image
+  category:
+    description: Category, genre, collection, department, or taxonomy tag
+    synonyms:
+    - category
+    - collection
+    - department
+    - genre
+    - tag
+    - section
+    - breadcrumb
+  version:
+    description: Software version, release tag, or build number
+    synonyms:
+    - version
+    - release version
+    - release tag
+    - build number
+    - changelog version
+  company:
+    description: Company name, employer, brand, vendor, seller, or manufacturer
+    synonyms:
+    - company
+    - employer
+    - company name
+    - brand
+    - seller
+    - vendor
+    - manufacturer
+  location:
+    description: Geographical location, city, remote badge, or address
+    synonyms:
+    - location
+    - city
+    - region
+    - country
+    - remote badge
+    - work location
+  salary:
+    description: Salary range, compensation package, hourly rate, or stipend
+    synonyms:
+    - salary
+    - salary range
+    - compensation
+    - pay
+    - hourly rate
+    - stipend
+  section_heading:
+    description: Auto-inferred taxonomy category for section heading
+    synonyms:
+    - section heading
+  code_snippet:
+    description: Auto-inferred taxonomy category for code snippet
+    synonyms:
+    - code snippet
+  price_after_discount_if_any_disp:
+    description: Auto-inferred taxonomy category for Price after discount, if any,
+      displayed for the laptop
+    synonyms:
+    - Price after discount, if any, displayed for the laptop
+  title_of_the_laptop_product:
+    description: Auto-inferred taxonomy category for Title of the laptop product
+    synonyms:
+    - Title of the laptop product
+  availability_status_of_the_lapto:
+    description: Auto-inferred taxonomy category for Availability status of the laptop
+      (e.g., In stock, Out of stock)
+    synonyms:
+    - Availability status of the laptop (e.g., In stock, Out of stock)
+  the_selling_price_of_the_laptop:
+    description: Auto-inferred taxonomy category for The selling price of the laptop
+    synonyms:
+    - The selling price of the laptop

@@ -116,6 +116,46 @@ class HealEngine:
             return False, None
 
         # ----------------------------------------------------
+        # LAYER 0: NeuroAnchor Collective Memory (<10ms, Immune System)
+        # ----------------------------------------------------
+        from .collective_memory import collective_memory
+        mem_selector, mem_entry_id, mem_conf = collective_memory.find_preheal_pattern(
+            field_description=field_description,
+            candidate_nodes=candidates,
+            target_url=collector.target_url
+        )
+        if mem_selector and mem_conf >= settings.MEMORY_PREFETCH_THRESHOLD:
+            # Check if this selector actually matches any candidate in the current HTML
+            matched_candidate = None
+            soup = BeautifulSoup(current_html, "html.parser")
+            try:
+                if soup.select(mem_selector):
+                    matched_candidate = mem_selector
+            except Exception:
+                pass
+
+            if matched_candidate:
+                latency_ms = int((time.time() - start_time) * 1000)
+                logger.info(
+                    f"[Layer 0 IMMUNE MEMORY HEALED] {broken_field_name}: '{old_selector}' -> '{mem_selector}' "
+                    f"(pattern: {mem_entry_id}, conf: {mem_conf:.2f}, latency: {latency_ms}ms)"
+                )
+                heal_event = HealEvent(
+                    collector_id=collector.id,
+                    job_id=job_id,
+                    field_name=broken_field_name,
+                    method="collective_memory",
+                    before_selector=old_selector,
+                    after_selector=mem_selector,
+                    confidence=float(round(mem_conf, 3)),
+                    latency_ms=latency_ms,
+                    candidate_scores={"collective_memory_entry": mem_conf}
+                )
+                self._apply_heal_update(db, collector, broken_field_name, mem_selector, heal_event)
+                collective_memory.reinforce_pattern(mem_entry_id, collector.target_url)
+                return True, heal_event
+
+        # ----------------------------------------------------
         # LAYER 1: Local NeuroAnchor Model (<200ms, $0 cost)
         # ----------------------------------------------------
         best_node, confidence, score_map = neuroanchor_engine.match_best_node(
@@ -211,6 +251,20 @@ class HealEngine:
         db.add(collector)
         db.commit()
         db.refresh(heal_event)
+
+        # Record this successful heal pattern into NeuroAnchor Collective Memory
+        try:
+            from .collective_memory import collective_memory
+            collective_memory.record_heal(
+                field_description=field_name,
+                selector=new_selector,
+                source_url=collector.target_url,
+                method=heal_event.method,
+                confidence=heal_event.confidence
+            )
+        except Exception as e:
+            logger.debug(f"Collective memory record note: {e}")
+
 
 
 heal_engine = HealEngine()

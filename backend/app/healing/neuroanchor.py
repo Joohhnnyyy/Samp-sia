@@ -19,7 +19,7 @@ class NeuroAnchorEngine:
     Footprint: ~25MB (int8 ONNX) / 384 dimensions.
     """
     def __init__(self, model_path: Optional[str] = None):
-        self.model_path = model_path or "./models/neuroanchor-v1-onnx"
+        self.model_path = model_path or "./models/neuroanchor-v1-onnx-int8"
         self.session = None
         self.tokenizer = None
         self.sentence_transformer = None

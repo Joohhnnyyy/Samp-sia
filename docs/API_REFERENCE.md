@@ -322,3 +322,134 @@ Answers user questions with source citations.
    ```json
    { "type": "error", "message": "Extraction failed: timeout" }
    ```
+
+---
+
+## 7. NeuroWatch — Continuous Automation Endpoints
+
+### `POST /api/watch`
+Creates a continuous monitoring watch job.
+* Mode 1 (`links`): Submits up to 5 URLs.
+* Mode 2 (`keyword`): Submits a continuous discovery search query.
+
+**Request Body (Mode 1 — Links):**
+```json
+{
+  "mode": "links",
+  "urls": [
+    "https://webscraper.io/test-sites/e-commerce/allinone/computers/laptops",
+    "https://www.selkirk.com/collections/pickleball-shoes/men"
+  ]
+}
+```
+
+**Request Body (Mode 2 — Keyword):**
+```json
+{
+  "mode": "keyword",
+  "query": "best budget laptops under $700"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "watch_job_id": "watch_58a192fc0b",
+  "mode": "links",
+  "sources": ["https://..."],
+  "interval_seconds": 120,
+  "estimated_credits_per_hour": 60.0,
+  "status": "active",
+  "ws_url": "/ws/watch/watch_58a192fc0b",
+  "ws_aggregate_url": "/ws/watch"
+}
+```
+
+### `GET /api/watch`
+Lists all active/paused watches with cycle counts, estimated credits, and last diff summary.
+
+### `GET /api/watch/{watch_job_id}`
+Returns full watch configuration, immutable cycle history snapshots, and previous diff metrics.
+
+### `POST /api/watch/{watch_job_id}/pause`
+Pauses a watch without losing history; safely terminates the background `asyncio` task.
+
+### `POST /api/watch/{watch_job_id}/resume`
+Resumes a paused watch and re-spawns its background scheduling loop.
+
+### `DELETE /api/watch/{watch_job_id}`
+Cancels the background task and removes the watch cleanly.
+
+### `WS /ws/watch/{watch_job_id}` & `WS /ws/watch`
+Streams real-time `watch_update` events on every cycle:
+```json
+{
+  "type": "watch_update",
+  "watch_job_id": "watch_58a192fc0b",
+  "cycle_number": 3,
+  "timestamp": "2026-08-23T18:15:00Z",
+  "sources_scraped": 2,
+  "total_rows": 48,
+  "avg_karma": 85.4,
+  "diff": {
+    "new": 3,
+    "removed": 0,
+    "changed": 1,
+    "total": 48
+  },
+  "next_run_at": "2026-08-23T18:17:00Z"
+}
+```
+
+---
+
+## 8. NeuroAnchor Collective Memory Endpoints
+
+### `GET /api/memory/stats`
+Returns the cross-site immune system metrics and first-try resolution rates.
+
+**Response (200 OK):**
+```json
+{
+  "total_patterns_learned": 13,
+  "total_consultations": 24,
+  "first_try_resolution_rate_overall": 95.8,
+  "first_try_resolution_rate_on_new_sites": 94.2,
+  "average_reinforcement_count": 2.4,
+  "patterns_by_field_type": {
+    "price": 3,
+    "title": 2,
+    "stock_status": 1,
+    "rating": 1,
+    "image_url": 1,
+    "company": 1,
+    "salary": 1,
+    "location": 1,
+    "section_heading": 1,
+    "code_snippet": 1
+  },
+  "top_reinforced_patterns": [
+    {
+      "id": "pat_price_a0a29c",
+      "field_type": "price",
+      "selector": ".price, .product-price, [data-price]",
+      "reinforcement_count": 4,
+      "confidence": 0.96,
+      "sites_count": 3,
+      "primary_site": "amazon.com"
+    }
+  ],
+  "active_immune_sites_count": 11
+}
+```
+
+### `GET /api/memory/taxonomy`
+Returns the standardized field taxonomy and synonym clusters.
+
+### `GET /api/memory/{field_type}`
+Returns all stored cross-site immune patterns for a specific canonical field type (e.g. `price`, `title`, `salary`).
+
+### `POST /api/memory/prune?min_confidence=0.40&max_age_days=30`
+Removes degraded or decayed immune patterns on demand.
+
+

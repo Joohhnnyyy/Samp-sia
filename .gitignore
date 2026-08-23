@@ -21,6 +21,7 @@
 neuroscrape.db
 neuroscrape.db-journal
 chroma_db/
+chroma_db*/
 *.chroma
 
 # 3. Python Bytecode, Caches & Builds

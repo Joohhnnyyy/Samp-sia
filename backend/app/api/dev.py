@@ -3,6 +3,7 @@ NeuroScrape - Developer & Demo Utilities API (Sections 5.2.4, 5.9, 6.3)
 Houses the live 'Simulate Site Change' trigger, preset connector gallery, and debug endpoints.
 """
 
+import asyncio
 import time
 import uuid
 import logging

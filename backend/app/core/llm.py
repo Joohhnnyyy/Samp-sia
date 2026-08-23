@@ -176,31 +176,135 @@ Generate a JSON ScrapePlan with:
 - agent_instructions: concise navigation or extraction instruction
 Return ONLY valid JSON matching this schema.
 """
-        groq_model = self.model or "gpt-oss-120b"
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.groq_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": groq_model,
-                    "messages": [
-                        {"role": "system", "content": "You are an expert web scraping schema architect for Bright Data Scraper Studio. Output only valid JSON."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    "response_format": {"type": "json_object"},
-                    "temperature": 0.1
-                }
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            content = data["choices"][0]["message"]["content"]
-            parsed = json.loads(content)
-            parsed["url"] = url
-            parsed["generated_by"] = f"groq_{groq_model}"
-            return ScrapePlan(**parsed)
+        groq_models = [self.model, "openai/gpt-oss-120b", "openai/gpt-oss-20b", "groq/compound", "qwen/qwen3.6-27b"]
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            for g_model in groq_models:
+                if not g_model:
+                    continue
+                try:
+                    resp = await client.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {self.groq_key}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "model": g_model,
+                            "messages": [
+                                {"role": "system", "content": "You are an expert web scraping schema architect for Bright Data Scraper Studio. Output only valid JSON."},
+                                {"role": "user", "content": prompt}
+                            ],
+                            "response_format": {"type": "json_object"},
+                            "temperature": 0.1
+                        }
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        content = data["choices"][0]["message"]["content"]
+                        parsed = json.loads(content)
+                        parsed["url"] = url
+                        parsed["generated_by"] = f"groq_{g_model}"
+                        return ScrapePlan(**parsed)
+                except Exception as e:
+                    logger.debug(f"Groq plan attempt failed on model {g_model}: {e}")
+
+        return self._plan_with_heuristic(url, field_descriptions)
+
+    async def _call_provider(self, system_prompt: str, user_prompt: str) -> str:
+        """
+        Generic prompt completion router supporting Groq, OpenAI, and Anthropic with heuristic fallback.
+        """
+        # 1. Try Groq with model candidates
+        if self.groq_key and self.provider == "groq":
+            groq_models = [self.model, "openai/gpt-oss-120b", "openai/gpt-oss-20b", "groq/compound", "qwen/qwen3.6-27b"]
+            async with httpx.AsyncClient(timeout=25.0) as client:
+                for g_model in groq_models:
+                    if not g_model:
+                        continue
+                    try:
+                        resp = await client.post(
+                            "https://api.groq.com/openai/v1/chat/completions",
+                            headers={
+                                "Authorization": f"Bearer {self.groq_key}",
+                                "Content-Type": "application/json"
+                            },
+                            json={
+                                "model": g_model,
+                                "messages": [
+                                    {"role": "system", "content": system_prompt},
+                                    {"role": "user", "content": user_prompt}
+                                ],
+                                "temperature": 0.1
+                            }
+                        )
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            return data["choices"][0]["message"]["content"]
+                    except Exception as e:
+                        logger.warning(f"Groq attempt with model {g_model} failed: {e}")
+
+        # 2. Try OpenAI
+        if self.openai_key and self.provider == "openai":
+            try:
+                async with httpx.AsyncClient(timeout=20.0) as client:
+                    resp = await client.post(
+                        "https://api.openai.com/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {self.openai_key}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "model": self.model or "gpt-4o-mini",
+                            "messages": [
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": user_prompt}
+                            ],
+                            "temperature": 0.1
+                        }
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        return data["choices"][0]["message"]["content"]
+            except Exception as e:
+                logger.warning(f"OpenAI generic call failed: {e}")
+
+        return ""
+
+    def parse_json_safely(self, text: str) -> Optional[Dict[str, Any]]:
+        """Cleans and extracts JSON object/array from any raw LLM text."""
+        if not text or not text.strip():
+            return None
+        cleaned = text.strip()
+        # Remove <think> ... </think> reasoning blocks if present
+        cleaned = re.sub(r"<think>.*?</think>", "", cleaned, flags=re.DOTALL).strip()
+        # Strip markdown code fences
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+        
+        # Direct parse attempt
+        try:
+            return json.loads(cleaned)
+        except Exception:
+            pass
+
+        # Try finding outermost { ... }
+        match = re.search(r"(\{.*\})", cleaned, flags=re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group(1))
+            except Exception:
+                pass
+        
+        # Try finding outermost [ ... ]
+        match_arr = re.search(r"(\[.*\])", cleaned, flags=re.DOTALL)
+        if match_arr:
+            try:
+                return json.loads(match_arr.group(1))
+            except Exception:
+                pass
+
+        return None
 
 
 llm_client = LLMClient()
+

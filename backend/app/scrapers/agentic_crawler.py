@@ -25,7 +25,29 @@ class AgenticCrawler:
     ) -> Dict[str, Any]:
         """
         Executes bounded multi-step autonomous navigation to collect target item/listing URLs.
+        Hard step cap + timeout enforced.
         """
+        try:
+            return await asyncio.wait_for(
+                self._crawl_loop(start_url, goal, max_steps),
+                timeout=timeout_seconds
+            )
+        except asyncio.TimeoutError:
+            logger.warning(f"Agentic crawl timed out after {timeout_seconds}s for goal: '{goal}'")
+            return {
+                "status": "timeout",
+                "goal": goal,
+                "steps_executed": 0,
+                "discovered_urls": [start_url],
+                "step_logs": [f"Crawl timed out after {timeout_seconds} seconds. Returning start URL as fallback."]
+            }
+
+    async def _crawl_loop(
+        self,
+        start_url: str,
+        goal: str,
+        max_steps: int
+    ) -> Dict[str, Any]:
         logger.info(f"Starting agentic crawl for goal: '{goal}' on {start_url} (max_steps={max_steps})")
         visited_urls = set()
         discovered_urls = []
@@ -88,3 +110,4 @@ class AgenticCrawler:
 
 
 agentic_crawler = AgenticCrawler()
+

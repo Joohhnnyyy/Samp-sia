@@ -72,3 +72,16 @@ cd SAMP/backend
 pytest -v
 ```
 All test suites in `tests/` will execute and validate API endpoints, Layer 1 NeuroAnchor healing, Scrape Karma evaluation, ethics compliance, and RAG retrieval.
+
+---
+
+## 5. NeuroAnchor Collective Memory Utilities
+
+```bash
+# Seed initial cross-site immune patterns across representative site archetypes
+python scripts/seed_collective_memory.py
+
+# Prune degraded memory patterns below confidence floor or older than 30 days
+python scripts/prune_memory.py --min-conf 0.40 --days 30
+```
+

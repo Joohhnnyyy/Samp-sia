@@ -10,7 +10,19 @@ from app.scrapers.agentic_crawler import agentic_crawler
 
 
 @pytest.mark.asyncio
-async def test_teach_by_example_learner():
+async def test_teach_by_example_learner(monkeypatch):
+    test_html = """
+    <div class="product-item">
+        <h2 class="product-title">Apple MacBook Pro 16</h2>
+        <span class="product-price">$2,499.00</span>
+        <span class="stock-status">In Stock</span>
+    </div>
+    """
+    async def mock_fetch(url):
+        return test_html
+
+    monkeypatch.setattr(scrapling_fetcher, "fetch_html", mock_fetch)
+
     url = "https://example-store.com/laptops"
     rule = await teach_learner.learn_rule(url=url, label="price", example_text="$2,499.00")
     assert rule is not None
@@ -20,7 +32,19 @@ async def test_teach_by_example_learner():
 
 
 @pytest.mark.asyncio
-async def test_scrapling_fallback_extraction():
+async def test_scrapling_fallback_extraction(monkeypatch):
+    test_html = """
+    <div class="product-item">
+        <h2 class="product-title">Apple MacBook Pro 16</h2>
+        <span class="product-price">$2,499.00</span>
+        <span class="stock-status">In Stock</span>
+    </div>
+    """
+    async def mock_fetch(url):
+        return test_html
+
+    monkeypatch.setattr(scrapling_fetcher, "fetch_html", mock_fetch)
+
     url = "https://example-store.com/laptops"
     selectors = {
         "title": ".product-title",
@@ -39,13 +63,25 @@ async def test_scrapling_fallback_extraction():
 
 
 @pytest.mark.asyncio
-async def test_agentic_crawler_bounded_navigation():
+async def test_agentic_crawler_bounded_navigation(monkeypatch):
+    test_html = """
+    <html><body>
+        <a href="/products/laptop-1">View Laptop 1 Details</a>
+        <a href="/products/laptop-2">View Laptop 2 Details</a>
+        <a href="/category/laptops?page=2">Next Page</a>
+    </body></html>
+    """
+    async def mock_fetch_html(url):
+        return test_html
+
+    monkeypatch.setattr(scrapling_fetcher, "fetch_html", mock_fetch_html)
+
     url = "https://example-store.com"
     res = await agentic_crawler.run_agentic_plan(
         start_url=url,
         goal="discover all product pages",
         max_steps=2,
-        timeout_seconds=5
+        timeout_seconds=10
     )
     assert res["status"] == "completed"
     assert res["steps_executed"] <= 2

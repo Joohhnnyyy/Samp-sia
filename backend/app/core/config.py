@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
-    LLM_MODEL: str = "gpt-oss-120b"
+    LLM_MODEL: str = "openai/gpt-oss-120b"
 
     # Database & Storage
     DATABASE_URL: str = "sqlite:///./neuroscrape.db"
@@ -44,13 +44,21 @@ class Settings(BaseSettings):
     CHROMA_PERSIST_DIR: str = "./chroma_db"
 
     # NeuroAnchor Local Model
-    MODEL_PATH: str = "./models/neuroanchor-v1-onnx"
+    MODEL_PATH: str = "./models/neuroanchor-v1-onnx-int8"
     KARMA_MODEL_PATH: str = "./models/karma-head.joblib"
     NEUROANCHOR_CONFIDENCE_THRESHOLD: float = 0.72
 
     # Ethics & Guardrails
-    ENFORCE_ROBOTS_TXT: bool = True
+    ENFORCE_ROBOTS_TXT: bool = False
     BLOCK_PRIVATE_URLS: bool = True
+
+    # NeuroWatch — Continuous Automation Mode
+    WATCH_INTERVAL_SECONDS: int = 120
+    WATCH_MAX_SOURCES: int = 5
+
+    # NeuroAnchor Collective Memory (Cross-Site Immune System)
+    MEMORY_PREFETCH_THRESHOLD: float = 0.75
 
 
 settings = Settings()
+

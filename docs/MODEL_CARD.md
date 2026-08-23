@@ -22,6 +22,10 @@ Technical specification, training methodology, benchmarks, and efficiency analys
    - Computes cosine similarity to pinpoint the replacement selector in sub-200ms when website structure mutates.
 2. **Scrape Karma Quality Scoring**:
    - Reuses the exact same 384-dim embedding representation with a lightweight logistic regression classifier head (`models/karma-head.joblib`) to score scrape validity (0–100) and flag semantic drift without loading a second neural model.
+3. **Collective Memory Cross-Site Immune System**:
+   - Stores learned extraction patterns indexed by canonical `field_type` in ChromaDB collection `field_pattern_memory`.
+   - Reuses NeuroAnchor embeddings to calculate pre-heal similarity on brand-new sites with **0ms latency** and **0 cloud API calls**.
+   - Cold-start seeded on representative domains: Amazon, Best Buy, Walmart, Target, Shopify, Hacker News Jobs, Greenhouse, Lever, Levels.fyi, Bright Data Docs, FastAPI Docs, GitHub Releases.
 
 ---
 

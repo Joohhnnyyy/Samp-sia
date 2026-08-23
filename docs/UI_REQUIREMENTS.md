@@ -1,6 +1,8 @@
-# NeuroScrape — Frontend UI Requirements & Screen Specifications
+# SaMp (Smart Autonomous Mining Platform) — Frontend UI Requirements
+> **AI Assistant**: **Sia** (Self-healing Intelligence Agent)  
+> **Master Prompt for Developers**: See [`FRONTEND_MASTER_PROMPT.md`](../FRONTEND_MASTER_PROMPT.md) and [`FRONTEND_DASHBOARD_BLUEPRINT.md`](./FRONTEND_DASHBOARD_BLUEPRINT.md).
 
-Detailed specification for the frontend teammate to build a visually rich, demo-ready product UI.
+Detailed specification for the frontend teammate to build a visually rich, demo-ready product dashboard.
 
 ---
 
@@ -87,3 +89,40 @@ Detailed specification for the frontend teammate to build a visually rich, demo-
 - **Data Source**: `GET /api/health/collectors` and `GET /api/health/events`.
 - **Collector Fleet Table**: Collector ID, URL, Status (`Active` / `Degraded`), Schema Version, Total Runs, Success Rate %, and Average Karma Score trend.
 - **Drift Alert Banner**: Highlights collectors experiencing data shape anomalies or missing fields.
+
+---
+
+## Screen 8: NeuroWatch — Automation Dashboard (Mission Control)
+- **Purpose**: The "walk away" automation pillar where the system continuously scrapes on a 2-minute interval and streams live diffs.
+- **"New Watch" Panel**:
+  - Mode Toggle: `Mode 1 (Source Links)` vs `Mode 2 (Keyword / Query)`.
+  - Links Mode: Dynamic URL input list with `+ Add Source` button capped at 5.
+  - Keyword Mode: Single query text input.
+  - Interval Indicator: Fixed 2-minute (`120s`) badge.
+  - Estimated Bright Data Usage Readout: `Credits: (sources * 30)/hr`.
+  - Submit: `[Launch Autonomous NeuroWatch]` &rarr; `POST /api/watch`.
+- **Dashboard Grid (Active Watches)**:
+  - One card per active watch with source/query, status (`ACTIVE` / `PAUSED`), countdown to next run, last diff summary (`+3 new / ~1 changed / -0 removed`), mini karma sparkline badge.
+  - Card Controls: `[Pause]` &rarr; `POST /api/watch/:id/pause`, `[Resume]` &rarr; `POST /api/watch/:id/resume`, `[Delete]` &rarr; `DELETE /api/watch/:id`.
+- **Live Cycle Timeline & Diff Stream**:
+  - Connected to `WS /ws/watch` (aggregate feed) and `WS /ws/watch/:id`.
+  - Displays real-time updates as every 2-minute cycle finishes, showing newly discovered items and data changes.
+
+---
+
+## Screen 9: NeuroAnchor Collective Memory — Cross-Site Immune System (`/collective-memory`)
+- **Purpose**: Flagship differentiator — makes the local model get smarter with every heal across any site, pre-healing fields on sites never scraped before.
+- **Headline Stat Header**:
+  - **Total Patterns Learned**: Count from `GET /api/memory/stats` (e.g. `13+`).
+  - **First-Try Resolution Rate (Overall)**: `94.2%` (percentage of queries where memory resolved correctly on first try).
+  - **First-Try Resolution Rate on New Sites (The Winner Metric)**: `88.5%–95.0%` (first-try resolution on domains never scraped before).
+  - **Average Reinforcement Count**: `2.4x–4.1x` (multi-site validation index).
+- **Browsable Field Types & Immune Patterns**:
+  - List of canonical field types (`price`, `title`, `stock_status`, `rating`, `author`, `publish_date`, `sku`, `image_url`, `job_title`, `salary`, `company`, `code_snippet`, etc.).
+  - For each field type: reinforcement count badge, source-site diversity list (e.g. `"price — learned from 6 different sites — 94% first-try"`), and confidence score gauge.
+  - Interactive inspector: click a field type to fetch `GET /api/memory/{field_type}` and display all active selectors and context embeddings.
+- **Visual Connection to Self-Healing Replay**:
+  - Uses the same diff/timeline visual language: memory-sourced resolution displays a purple `[🧠 resolved from memory, 0ms heal needed]` badge next to the green `[⚡ healed via local model]` badge.
+  - Zero-latency badge: `⚡ 0ms repair time • $0.00 cloud cost • 100% local`.
+
+

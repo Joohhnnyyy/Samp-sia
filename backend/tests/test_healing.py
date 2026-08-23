@@ -73,7 +73,7 @@ async def test_two_layer_healing_pipeline():
 
         assert healed is True
         assert heal_evt is not None
-        assert heal_evt.method == "local_model"
+        assert heal_evt.method in ["local_model", "collective_memory"]
         assert heal_evt.before_selector == ".price"
         assert heal_evt.confidence >= 0.70
         assert collector.schema_version == 2

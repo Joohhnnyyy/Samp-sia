@@ -52,3 +52,13 @@ Before walking onto the demo stage or recording the submission video:
   - Click **[Index Scraped Data to Vector Store]**.
   - Type a question (e.g. *"Which laptop has 32GB RAM?"*) and click **Ask Knowledge Base**.
   - Verify answer renders with clickable citation badges.
+
+- [ ] **Step 6: Test NeuroWatch (Continuous Automation)**
+  - Navigate to **[⏱️ NeuroWatch (Automation)]** tab.
+  - Create a 2-source watch in Mode 1 or a keyword watch in Mode 2.
+  - Verify `watch_job_id` is created and the background `asyncio.Task` loop begins.
+  - Verify Cycle #1 completes and pushes a `watch_update` event with row count, karma score, and `+N new` diff summary over WebSocket.
+  - Click **[⏸ Pause]** &rarr; verify status updates to `PAUSED` and task is safely cancelled without orphaned loops.
+  - Click **[▶ Resume]** &rarr; verify task re-spawns cleanly and next run countdown starts.
+  - Click **[🗑 Delete]** &rarr; verify watch is removed from DB and background task terminates completely.
+
