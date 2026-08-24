@@ -3,6 +3,7 @@ import { FiCommand, FiSun, FiMoon } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ChatInput from './ChatInput';
+import { API_BASE_URL } from '../config';
 
 // Import our "Tools" which we'll render inline
 import ScraperStudio from './ScraperStudio';
@@ -179,7 +180,7 @@ export default function MainChatArea({ isLightMode = false, triggeredAction, onA
       } else if (lower.startsWith('/trending')) {
         const parts = input.split(' ');
         const location = parts.length > 1 ? parts.slice(1).join(' ') : 'Global';
-        fetch(`http://localhost:8000/api/news/trending?location=${encodeURIComponent(location)}`)
+        fetch(`${API_BASE_URL}/api/news/trending?location=${encodeURIComponent(location)}`)
           .then(res => res.json())
           .then(data => {
             let md = `**${location} Trending Intelligence**\n\n`;
@@ -200,7 +201,7 @@ export default function MainChatArea({ isLightMode = false, triggeredAction, onA
       } else {
         // Fallback to Native Sia LLM Chat
         const chatHistory = messages.map(m => ({ role: m.role, content: m.content }));
-        fetch('http://localhost:8000/api/assistant/geopolitical-chat', {
+        fetch(`${API_BASE_URL}/api/assistant/geopolitical-chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: input, user_location: 'Global', chat_history: chatHistory })
@@ -272,18 +273,10 @@ export default function MainChatArea({ isLightMode = false, triggeredAction, onA
       <div className="center-content" style={{ flex: 1, overflowY: 'auto', padding: '0 15%', scrollBehavior: 'smooth' }}>
         {messages.length === 0 ? (
           <div ref={heroRef} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', minHeight: '70vh' }}>
-            {/* Giant BloubBot Sitting in the Right Corner */}
-            <div style={{
-              position: 'fixed',
-              right: '-8vw',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              zIndex: 2,
-              filter: 'drop-shadow(0 36px 80px rgba(0,0,0,0.35))',
-              pointerEvents: 'auto'
-            }}>
+            {/* Giant BloubBot Sitting in the Right Corner (Layered Behind, Mobile Adaptive) */}
+            <div className="hero-bloubbot-wrapper">
               <BloubBot 
-                size="clamp(500px, 46vw, 920px)" 
+                size="100%" 
                 follow={true} 
                 expression="neutre" 
                 shape={undefined}
@@ -292,17 +285,19 @@ export default function MainChatArea({ isLightMode = false, triggeredAction, onA
               />
             </div>
 
-            {/* Centered Welcome Hero & Input */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '800px', zIndex: 1, marginTop: '-18vh', textAlign: 'center' }}>
-              <h1 style={{ 
-                fontSize: 'clamp(36px, 3.8vw, 56px)', 
-                fontWeight: '400', 
-                color: 'var(--color-text-primary)', 
-                marginBottom: '32px', 
-                letterSpacing: '-0.025em', 
-                lineHeight: '1.15',
-                whiteSpace: 'nowrap'
-              }}>
+            {/* Centered Welcome Hero & Input (Layered in Foreground) */}
+            <div className="hero-content-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '800px', zIndex: 10, position: 'relative', marginTop: '-18vh', textAlign: 'center' }}>
+              <h1 
+                style={{ 
+                  fontSize: 'clamp(28px, 3.8vw, 56px)', 
+                  fontWeight: '400', 
+                  color: 'var(--color-text-primary)', 
+                  marginBottom: '32px', 
+                  letterSpacing: '-0.025em', 
+                  lineHeight: '1.15',
+                  userSelect: 'none'
+                }}
+              >
                 How can I help you today?
               </h1>
               <div style={{ width: '100%' }}>

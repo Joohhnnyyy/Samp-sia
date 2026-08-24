@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiCheckSquare, FiSearch, FiAlertCircle, FiLoader } from 'react-icons/fi';
 import gsap from 'gsap';
+import { API_BASE_URL } from '../config';
 
 export default function NewsFactChecker() {
   const [query, setQuery] = useState('');
@@ -32,7 +33,7 @@ export default function NewsFactChecker() {
     if (!query) return;
     setIsSearching(true);
     try {
-      const res = await fetch('http://localhost:8000/api/news/fact-check', {
+      const res = await fetch(`${API_BASE_URL}/api/news/fact-check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

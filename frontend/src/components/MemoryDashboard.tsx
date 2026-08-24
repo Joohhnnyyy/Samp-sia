@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FiTrash2, FiTag } from 'react-icons/fi';
 import gsap from 'gsap';
+import { API_BASE_URL } from '../config';
 
 interface MemoryStats {
   total_patterns_learned: number;
@@ -35,8 +36,8 @@ export default function MemoryDashboard() {
 
   useEffect(() => {
     Promise.all([
-      fetch('http://localhost:8000/api/memory/stats').then(r => r.json()),
-      fetch('http://localhost:8000/api/memory/taxonomy').then(r => r.json())
+      fetch(`${API_BASE_URL}/api/memory/stats`).then(r => r.json()),
+      fetch(`${API_BASE_URL}/api/memory/taxonomy`).then(r => r.json())
     ]).then(([statsData, taxonomyData]) => {
       setStats(statsData);
       setTaxonomy(taxonomyData);
@@ -50,10 +51,10 @@ export default function MemoryDashboard() {
   const handlePrune = async () => {
     if (!window.confirm("Are you sure you want to prune decayed memory patterns?")) return;
     try {
-      await fetch('http://localhost:8000/api/memory/prune?min_confidence=0.40&max_age_days=30', { method: 'POST' });
+      await fetch(`${API_BASE_URL}/api/memory/prune?min_confidence=0.40&max_age_days=30`, { method: 'POST' });
       alert("Pruned decayed patterns successfully.");
       // Reload stats
-      const newStats = await fetch('http://localhost:8000/api/memory/stats').then(r => r.json());
+      const newStats = await fetch(`${API_BASE_URL}/api/memory/stats`).then(r => r.json());
       setStats(newStats);
     } catch (err) {
       console.error(err);

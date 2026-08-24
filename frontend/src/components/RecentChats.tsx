@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL } from '../config';
 
 interface Connector {
   id: string;
@@ -18,7 +19,7 @@ export default function RecentChats({ onSelectPreset }: RecentChatsProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/connectors')
+    fetch(`${API_BASE_URL}/api/connectors`)
       .then(res => res.json())
       .then(data => {
         setConnectors(data.connectors.slice(0, 4)); // Only grab first 4 as requested

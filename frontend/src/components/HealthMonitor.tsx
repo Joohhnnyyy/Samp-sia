@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiArrowUpRight, FiArrowDownRight, FiCheckCircle, FiAlertTriangle, FiRefreshCw } from 'react-icons/fi';
+import { API_BASE_URL } from '../config';
 import gsap from 'gsap';
 
 interface CollectorHealth {
@@ -35,8 +36,8 @@ export default function HealthMonitor() {
   const fetchHealth = async () => {
     try {
       const [colRes, evtRes] = await Promise.all([
-        fetch('http://localhost:8000/api/health/collectors'),
-        fetch('http://localhost:8000/api/health/events?limit=10')
+        fetch(`${API_BASE_URL}/api/health/collectors`),
+        fetch(`${API_BASE_URL}/api/health/events?limit=10`)
       ]);
       const colData = await colRes.json();
       const evtData = await evtRes.json();
@@ -59,7 +60,7 @@ export default function HealthMonitor() {
     setRunningDiag(collector_id);
     setDiagResult(null);
     try {
-      const response = await fetch(`http://localhost:8000/api/health/check/${collector_id}`, { method: 'POST' });
+      const response = await fetch(`${API_BASE_URL}/api/health/check/${collector_id}`, { method: 'POST' });
       const data = await response.json();
       setDiagResult({ id: collector_id, status: data.status, message: data.message });
       await fetchHealth();

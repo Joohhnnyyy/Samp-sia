@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiPlus, FiTrash2, FiGlobe, FiLoader, FiSearch } from 'react-icons/fi';
 import gsap from 'gsap';
+import { API_BASE_URL } from '../config';
 
 interface ScraperStudioProps {
   onJobStart?: (id: string) => void;
@@ -76,7 +77,7 @@ export default function ScraperStudio({ onJobStart, presetData }: ScraperStudioP
         payload = { query: targetUrl, fields: fields.map(f => f.name), max_sources: maxSteps };
       }
 
-      const res = await fetch(`http://localhost:8000${endpoint}`, {
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

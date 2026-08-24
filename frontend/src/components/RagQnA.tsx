@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FiMessageSquare, FiSend, FiDatabase, FiLink } from 'react-icons/fi';
+import { API_BASE_URL } from '../config';
 
 interface RagQnAProps {
   jobId?: string;
@@ -25,7 +26,7 @@ export default function RagQnA({ jobId }: RagQnAProps) {
     if (!jobId) return;
     setIsIndexing(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/rag/index/${jobId}`, { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/rag/index/${jobId}`, { method: 'POST' });
       const data = await res.json();
       setCollectionName(data.collection_name);
       setIndexStatus(`Indexed ${data.chunks_indexed} chunks successfully.`);
@@ -44,7 +45,7 @@ export default function RagQnA({ jobId }: RagQnAProps) {
     setIsAsking(true);
     
     try {
-      const res = await fetch('http://localhost:8000/api/rag/ask', {
+      const res = await fetch(`${API_BASE_URL}/api/rag/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

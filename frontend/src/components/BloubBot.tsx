@@ -51,8 +51,8 @@ export const STATE_ALIASES: Record<string, StateId> = {
   swirl: 'swirl'
 };
 
-export const PROCESSING_SEQUENCE: StateId[] = ['thinking', 'orbit', 'burst', 'comet', 'swirl', 'play', 'alert', 'exclaim'];
-export const EYE_ONLY_SEQUENCE: StateId[] = ['idle', 'wink', 'wide', 'notify'];
+export const PROCESSING_SEQUENCE: StateId[] = ['thinking', 'orbit', 'burst', 'comet', 'swirl', 'play'];
+export const EYE_ONLY_SEQUENCE: StateId[] = ['idle', 'wink', 'wide', 'alert', 'notify'];
 
 export const DEFAULT_CHAT_SEQUENCE: StateId[] = EYE_ONLY_SEQUENCE;
 
@@ -76,9 +76,8 @@ export default function BloubBot({
   customSequence?: StateId[];
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [frame, setFrame] = useState<BotFrame | null>(null);
-  const [internalStateIndex, setInternalStateIndex] = useState(0);
   const [shapeIndex, setShapeIndex] = useState(0);
+  const [internalStateIndex, setInternalStateIndex] = useState(0);
 
   const activeShapeName = shape ? (SHAPE_ALIASES[shape.toLowerCase()] || shape) : SHAPE_SEQUENCE[shapeIndex % SHAPE_SEQUENCE.length]!;
   const resolvedShapeKey = useMemo(() => SHAPE_ALIASES[activeShapeName.toLowerCase()] || activeShapeName, [activeShapeName]);
@@ -93,7 +92,17 @@ export default function BloubBot({
     return new BotEngine(R, effectiveState, initShape, initExpr);
   }, []);
 
+  const [frame, setFrame] = useState<BotFrame | null>(() => {
+    try {
+      return engine.sample(0);
+    } catch {
+      return null;
+    }
+  });
+
   const clockRef = useRef(0);
+  const stateRef = useRef(effectiveState);
+  stateRef.current = effectiveState;
   
   // Sync state to engine
   useEffect(() => {
@@ -138,7 +147,7 @@ export default function BloubBot({
     };
 
     if (follow) {
-      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointermove', onPointerMove, { passive: true });
       document.addEventListener('pointerleave', onPointerLeave);
     }
 
@@ -149,22 +158,25 @@ export default function BloubBot({
     };
 
     const aim = () => {
-      const isEyeState = EYE_ONLY_SEQUENCE.includes(effectiveState);
-      if (!isEyeState) {
+      const currentState = stateRef.current;
+      const st = STATE_BY_ID.get(currentState);
+      if (!st?.baseFace && !EYE_ONLY_SEQUENCE.includes(currentState)) {
         release();
         return;
       }
-      const box = svgRef.current?.getBoundingClientRect();
-      if (!box || box.width === 0 || box.height === 0) return;
       
       if (!aiming) turnSince = clock;
       const demiLargeur = Math.max(1, window.innerWidth / 2);
       const demiHauteur = Math.max(1, window.innerHeight / 2);
       
+      // Calculate normalized cursor position (-1 to 1) relative to screen center
+      const nx = pointer ? clamp((pointer.x - demiLargeur) / demiLargeur, -1, 1) : 0;
+      const ny = pointer ? clamp((pointer.y - demiHauteur) / demiHauteur, -1, 1) : 0;
+      
       engine.setLook(
         lookTarget({
-          nx: pointer ? clamp((pointer.x - (box.left + box.width / 2)) / demiLargeur, -1, 1) : -0.4,
-          ny: pointer ? clamp((pointer.y - (box.top + box.height / 2)) / demiHauteur, -1, 1) : 0,
+          nx,
+          ny,
           tour: easings.easeOutQuint(clamp((clock - turnSince) / TURN_TIME)),
           pointer: pointer !== null
         }),
@@ -181,11 +193,13 @@ export default function BloubBot({
       clock += dt;
       clockRef.current = clock;
 
-      // Auto cycle sequence if state is not manually forced - longer calm duration (4.5s)
+      // Auto cycle sequence if state is not manually forced
       if (autoSequence && !state) {
         stateTimer += dt;
         const currentDef = STATE_BY_ID.get(effectiveState);
-        const duration = Math.max(currentDef?.duration || 3, 4.5);
+        // Use the state definition's natural duration for lively animated states, or 4.5s for calm idle sequences
+        const isEyeOnly = seqList.every(s => EYE_ONLY_SEQUENCE.includes(s));
+        const duration = isEyeOnly ? Math.max(currentDef?.duration || 3, 4.5) : (currentDef?.duration || 2.4);
         if (stateTimer >= duration) {
           stateTimer = 0;
           setInternalStateIndex((prev) => (prev + 1) % seqList.length);
@@ -219,13 +233,14 @@ export default function BloubBot({
 
   if (!frame) return null;
 
+  const isNumeric = typeof size === 'number';
+  const sizeStyle = isNumeric ? { width: `${size}px`, height: `${size}px` } : { width: size, height: size, maxWidth: '100%', aspectRatio: '1 / 1' };
+
   return (
     <svg
       ref={svgRef}
-      width={size}
-      height={size}
       viewBox={`${-VB} ${-VB} ${VB * 2} ${VB * 2}`}
-      style={{ cursor: 'pointer' }}
+      style={{ cursor: 'pointer', ...sizeStyle, display: 'block' }}
       onClick={() => {
         setShapeIndex((prev) => prev + 1);
         setInternalStateIndex((prev) => (prev + 1) % seqList.length);
@@ -234,9 +249,6 @@ export default function BloubBot({
       <defs>
         <mask id={maskId} maskUnits="userSpaceOnUse" x={-VB} y={-VB} width={VB * 2} height={VB * 2}>
           <path d={frame.bodyPath} fill="#fff" />
-          {frame.eyes.map((eye, i) => (
-            <path key={i} d={eye.d} transform={eye.matrix} opacity={eye.alpha} fill="#000" />
-          ))}
           {frame.notch && (
             <circle cx={frame.notch.x} cy={frame.notch.y} r={frame.notch.r} fill="#000" />
           )}
@@ -304,16 +316,24 @@ export default function BloubBot({
         {/* Siri-Orb Multi-Layered Shader Body Texture */}
         <g filter={`url(#siri-glow-${uid})`}>
           {/* Base Siri Gradient Core */}
-          <path d={frame.bodyPath} fill={`url(#siri-core-${uid})`} />
+          <path d={frame.bodyPath} fill={`url(#siri-core-${uid})`} mask={`url(#${maskId})`} />
           {/* Glass Sheen Drift Layer */}
-          <path d={frame.bodyPath} fill={`url(#siri-sheen-${uid})`} style={{ mixBlendMode: 'screen' }} />
+          <path d={frame.bodyPath} fill={`url(#siri-sheen-${uid})`} mask={`url(#${maskId})`} style={{ mixBlendMode: 'screen' }} />
           {/* Specular Depth Rim */}
           <path d={frame.bodyPath} fill="none" stroke={`url(#siri-rim-${uid})`} strokeWidth="3" opacity="0.6" />
         </g>
         
-        {/* Eye Inverted Cutout */}
-        <g mask={`url(#${maskId})`}>
-          <rect x={-VB} y={-VB} width={VB * 2} height={VB * 2} fill="#050508" />
+        {/* Render Eyes Directly on Top of Shader Body with Ink Cutout */}
+        <g>
+          {frame.eyes.map((eye, i) => (
+            <path 
+              key={i} 
+              d={eye.d} 
+              transform={eye.matrix} 
+              opacity={eye.alpha} 
+              fill="#0a0a0c" 
+            />
+          ))}
         </g>
       </g>
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiSearch, FiX, FiTerminal } from 'react-icons/fi';
 import gsap from 'gsap';
+import { API_BASE_URL } from '../config';
 
 interface JobItem {
   id: string;
@@ -53,7 +54,7 @@ export default function LogSearchModal({ isOpen, onClose, onSelectJob }: LogSear
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/scrape/jobs?limit=50');
+      const res = await fetch(`${API_BASE_URL}/api/scrape/jobs?limit=50`);
       if (res.ok) {
         const data = await res.json();
         setJobs(Array.isArray(data) ? data : []);
@@ -80,7 +81,7 @@ export default function LogSearchModal({ isOpen, onClose, onSelectJob }: LogSear
     setSelectedJob(job);
     setLoadingLogs(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/scrape/jobs/${job.id}`);
+      const res = await fetch(`${API_BASE_URL}/api/scrape/jobs/${job.id}`);
       if (res.ok) {
         const data = await res.json();
         setJobLogs(data.rows || []);

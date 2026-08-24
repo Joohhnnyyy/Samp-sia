@@ -160,7 +160,7 @@
   <div class="row" style="justify-content:space-between">
     <div class="row" style="flex:1">
       <label style="margin:0;margin-right:8px">Backend API:</label>
-      <input type="url" id="apiBase" value="http://localhost:8000" style="margin:0;width:220px;padding:4px 8px;font-size:12px" />
+      <input type="url" id="apiBase" value="" placeholder="e.g. https://your-backend.com" style="margin:0;width:260px;padding:4px 8px;font-size:12px" />
       <span class="status-dot" id="statusDot"></span>
       <span id="statusText" style="font-size:11.5px;color:var(--muted)">Checking connection...</span>
     </div>
@@ -853,9 +853,20 @@ let pollInterval = null;
 
 function apiBase(){
   const input = document.getElementById('apiBase');
-  if (input && input.value && input.value.trim()) return input.value.trim().replace(/\/$/, '');
-  if (window.location.protocol.startsWith('http')) return window.location.origin;
-  return 'http://localhost:8000';
+  if (input && input.value && input.value.trim()) {
+    const val = input.value.trim().replace(/\/$/, '');
+    try { localStorage.setItem('samp_api_base', val); } catch(e){}
+    return val;
+  }
+  try {
+    const saved = localStorage.getItem('samp_api_base');
+    if (saved && saved.trim()) {
+      if (input) input.value = saved.trim();
+      return saved.trim().replace(/\/$/, '');
+    }
+  } catch(e){}
+  if (input && !input.value) input.value = window.location.origin;
+  return window.location.origin;
 }
 
 function openSocket(jobId){

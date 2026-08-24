@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FiPlay, FiPause, FiTrash2, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import gsap from 'gsap';
+import { API_BASE_URL } from '../config';
 
 interface WatchJob {
   watch_job_id: string;
@@ -43,7 +44,7 @@ export default function WatchControl() {
       setExpandedJobId(id);
       setJobDetails(null);
       try {
-        const res = await fetch(`http://localhost:8000/api/watch/${id}`);
+        const res = await fetch(`${API_BASE_URL}/api/watch/${id}`);
         const data = await res.json();
         setJobDetails(data);
       } catch (err) {
@@ -54,7 +55,7 @@ export default function WatchControl() {
 
   const fetchWatches = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/watch');
+      const res = await fetch(`${API_BASE_URL}/api/watch`);
       const data = await res.json();
       setWatches(data.watches || []);
       setLoading(false);
@@ -74,7 +75,7 @@ export default function WatchControl() {
     if (!input.trim()) return;
     try {
       const payload = mode === 'links' ? { mode, urls: input.split(',').map(s => s.trim()) } : { mode, query: input };
-      await fetch('http://localhost:8000/api/watch', {
+      await fetch(`${API_BASE_URL}/api/watch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -90,9 +91,9 @@ export default function WatchControl() {
     try {
       if (action === 'delete') {
         if (!window.confirm('Delete this watch job?')) return;
-        await fetch(`http://localhost:8000/api/watch/${id}`, { method: 'DELETE' });
+        await fetch(`${API_BASE_URL}/api/watch/${id}`, { method: 'DELETE' });
       } else {
-        await fetch(`http://localhost:8000/api/watch/${id}/${action}`, { method: 'POST' });
+        await fetch(`${API_BASE_URL}/api/watch/${id}/${action}`, { method: 'POST' });
       }
       fetchWatches();
     } catch (err) {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FiCheckCircle, FiChevronDown } from 'react-icons/fi';
 import gsap from 'gsap';
+import { API_BASE_URL } from '../config';
 
 interface HealEvent {
   id: string;
@@ -37,7 +38,7 @@ export default function HealingViewer({ jobId }: HealingViewerProps) {
   }, [activeTab]);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/heal-events?limit=10')
+    fetch(`${API_BASE_URL}/api/heal-events?limit=10`)
       .then(res => res.json())
       .then(data => {
         // backend HealEvent model returns field_name, method, before_selector, after_selector, confidence
@@ -63,7 +64,7 @@ export default function HealingViewer({ jobId }: HealingViewerProps) {
 
   useEffect(() => {
     if (activeTab === 'commits') {
-      fetch('http://localhost:8000/api/health/collectors')
+      fetch(`${API_BASE_URL}/api/health/collectors`)
         .then(res => res.json())
         .then(data => {
           const cols = data.collectors || [];
@@ -79,7 +80,7 @@ export default function HealingViewer({ jobId }: HealingViewerProps) {
   useEffect(() => {
     if (activeTab === 'commits' && selectedCollector) {
       setLoading(true);
-      fetch(`http://localhost:8000/api/schema-history/${selectedCollector}`)
+      fetch(`${API_BASE_URL}/api/schema-history/${selectedCollector}`)
         .then(res => res.json())
         .then(data => {
           setSchemaVersions(data.versions || []);

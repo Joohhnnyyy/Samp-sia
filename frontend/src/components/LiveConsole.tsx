@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import gsap from 'gsap';
+import { WS_BASE_URL } from '../config';
 
 interface LiveConsoleProps {
   jobId: string | null;
@@ -25,10 +26,10 @@ export default function LiveConsole({ jobId, onComplete }: LiveConsoleProps) {
   useEffect(() => {
     if (!jobId) return;
 
-    setLogs([`[INFO] Initializing secure connection to Sia Telemetry...`, `[INFO] Connecting to ws://localhost:8000/ws/jobs/${jobId}...`]);
+    setLogs([`[INFO] Initializing secure connection to Sia Telemetry...`, `[INFO] Connecting to ${WS_BASE_URL}/ws/jobs/${jobId}...`]);
     setStatus('connecting');
 
-    const ws = new WebSocket(`ws://localhost:8000/ws/jobs/${jobId}`);
+    const ws = new WebSocket(`${WS_BASE_URL}/ws/jobs/${jobId}`);
 
     ws.onopen = () => {
       setStatus('connected');

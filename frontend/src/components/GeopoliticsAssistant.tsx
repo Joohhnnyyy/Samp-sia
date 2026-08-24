@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FiGlobe, FiTrendingUp, FiSend, FiMessageSquare } from 'react-icons/fi';
+import { API_BASE_URL } from '../config';
 
 interface TrendingTopic {
   title: string;
@@ -27,7 +28,7 @@ export default function GeopoliticsAssistant() {
 
   useEffect(() => {
     setLoadingTrending(true);
-    fetch(`http://localhost:8000/api/news/trending?location=${region}`)
+    fetch(`${API_BASE_URL}/api/news/trending?location=${region}`)
       .then(r => r.json())
       .then(data => {
         setTrending(data.trending_topics || []);
@@ -47,7 +48,7 @@ export default function GeopoliticsAssistant() {
     setIsTyping(true);
 
     try {
-      const res = await fetch('http://localhost:8000/api/assistant/geopolitical-chat', {
+      const res = await fetch(`${API_BASE_URL}/api/assistant/geopolitical-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

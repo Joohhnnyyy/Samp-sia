@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FiDownload, FiMessageSquare } from 'react-icons/fi';
+import { API_BASE_URL } from '../config';
 import gsap from 'gsap';
 
 interface ScrapedRow {
@@ -42,7 +43,7 @@ export default function ResultsTable({ jobId }: ResultsTableProps) {
         
         if (!targetJobId) {
           // Fetch the most recent job from the backend if none provided
-          const listRes = await fetch('http://localhost:8000/api/scrape/jobs?limit=1');
+          const listRes = await fetch(`${API_BASE_URL}/api/scrape/jobs?limit=1`);
           if (listRes.ok) {
             const list = await listRes.json();
             if (list && list.length > 0) {
@@ -56,7 +57,7 @@ export default function ResultsTable({ jobId }: ResultsTableProps) {
           return;
         }
 
-        const res = await fetch(`http://localhost:8000/api/jobs/${targetJobId}`);
+        const res = await fetch(`${API_BASE_URL}/api/jobs/${targetJobId}`);
         if (!res.ok) throw new Error('Not found');
         
         const data = await res.json();
@@ -77,14 +78,14 @@ export default function ResultsTable({ jobId }: ResultsTableProps) {
 
   const handleExport = (format: string) => {
     if (!job) return;
-    window.open(`http://localhost:8000/api/export/${job.id}?format=${format}`, '_blank');
+    window.open(`${API_BASE_URL}/api/export/${job.id}?format=${format}`, '_blank');
   };
 
   const handleSimulateBreakage = async () => {
     if (!job) return;
     setSimulating(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/dev/simulate-site-change/${job.id}`, { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/dev/simulate-site-change/${job.id}`, { method: 'POST' });
       if (!res.ok) throw new Error('Simulation failed');
       // The WebSocket will handle the streaming of the self-healing events
     } catch (err) {
