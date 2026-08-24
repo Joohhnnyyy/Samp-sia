@@ -78,3 +78,11 @@ logs/
 tmp/
 temp/
 scratch/
+
+# 8. Node.js & Frontend Caches
+node_modules/
+.vercel/
+dist/
+dist-ssr/
+*.tsbuildinfo
+

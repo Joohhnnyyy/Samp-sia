@@ -178,3 +178,27 @@ taxonomy:
     description: Auto-inferred taxonomy category for The selling price of the laptop
     synonyms:
     - The selling price of the laptop
+  hackathons:
+    description: Auto-inferred taxonomy category for hackathons
+    synonyms:
+    - hackathons
+  indicates_if_the_component_is_fr:
+    description: Auto-inferred taxonomy category for Indicates if the component is
+      free to use
+    synonyms:
+    - Indicates if the component is free to use
+  content_related_to_artificial_in:
+    description: Auto-inferred taxonomy category for Content related to artificial
+      intelligence
+    synonyms:
+    - Content related to artificial intelligence
+  sample_field_extracted_from_the_:
+    description: Auto-inferred taxonomy category for Sample field extracted from the
+      page
+    synonyms:
+    - Sample field extracted from the page
+  list_of_ui_component_names_displ:
+    description: Auto-inferred taxonomy category for List of UI component names displayed
+      on the browse page
+    synonyms:
+    - List of UI component names displayed on the browse page

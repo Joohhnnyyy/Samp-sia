@@ -40,10 +40,17 @@ class TaxonomyCategorizer:
             await ws_callback("progress", f"📂 Step 1: Ingesting primary URL via Bright Data: {url}...")
 
         # 1. Fetch main page HTML via Web Unlocker
+        main_html = None
         try:
             main_html = await brightdata_client.fetch_rendered_html(url)
         except Exception:
+            pass
+            
+        if not main_html:
             main_html = await scrapling_fetcher.fetch_html(url)
+            
+        if not main_html:
+            main_html = "<html></html>"
 
         soup = BeautifulSoup(main_html, "html.parser")
         parsed_base = urlparse(url)

@@ -1,0 +1,7 @@
+{
+  "out": "./src/bones",
+  "color": "rgba(255, 255, 255, 0.05)",
+  "darkColor": "rgba(255, 255, 255, 0.05)",
+  "shimmerColor": "rgba(255, 255, 255, 0.1)",
+  "darkShimmerColor": "rgba(255, 255, 255, 0.1)"
+}
