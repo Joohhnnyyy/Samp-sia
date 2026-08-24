@@ -24,7 +24,8 @@ class NeuroAnchorEngine:
         self.tokenizer = None
         self.sentence_transformer = None
         self._loaded = False
-        self._initialize_model()
+        # Do not load heavy models at import/boot time to stay under 512MB free tier limit
+        # They will be initialized lazily on first embedding request if needed
 
     def _initialize_model(self):
         """Attempts to load ONNX runtime first, then SentenceTransformer, then fallback."""
@@ -68,6 +69,9 @@ class NeuroAnchorEngine:
         """
         if not texts:
             return np.zeros((0, 384), dtype=np.float32)
+
+        if not self._loaded:
+            self._initialize_model()
 
         # 1. ONNX execution
         if self.session and self.tokenizer:

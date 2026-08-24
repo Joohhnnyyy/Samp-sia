@@ -36,9 +36,12 @@ class KarmaScoreEngine:
     def __init__(self, model_path: str = "./models/karma-head.joblib"):
         self.model_path = model_path
         self.classifier = None
-        self._load_classifier()
+        self._loaded = False
 
     def _load_classifier(self):
+        if self._loaded:
+            return
+        self._loaded = True
         if os.path.exists(self.model_path):
             try:
                 self.classifier = joblib.load(self.model_path)
